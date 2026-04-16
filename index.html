@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Governance Charter Generator | Start Your Charter</title>
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <div class="page-shell">
+
+    <header class="hero" aria-labelledby="page-title">
+      <div class="hero__copy">
+        <p class="eyebrow">State Government Starter Toolkit</p>
+        <h1 id="page-title">Data Governance Charter Generator</h1>
+        <p class="hero__lede">
+          Create a practical charter for a governance committee, stewardship council, or working group. Start with the core sections, review the supporting guidance pages when needed, then export a polished draft as a Word document.
+        </p>
+
+        <div class="hero__chips" aria-label="Design themes">
+          <span class="role-chip role-chip--owner">Authority</span>
+          <span class="role-chip role-chip--steward">Quality</span>
+          <span class="role-chip role-chip--custodian">Control</span>
+        </div>
+      </div>
+
+      <aside class="hero__panel" aria-label="What this tool helps you do">
+        <h2>What this tool helps you do</h2>
+        <ul>
+          <li>Stand up a committee charter quickly</li>
+          <li>Capture scope, authority, and membership</li>
+          <li>Export a polished draft as a Word document</li>
+        </ul>
+      </aside>
+    </header>
+
+    <nav class="site-tabs" aria-label="Primary">
+      <div class="site-tabs__inner">
+        <a class="site-tab" href="home.html">Home</a>
+        <a class="site-tab" href="before-you-start.html">Before You Start</a>
+        <a class="site-tab site-tab--primary site-tab--active" href="index.html#charter-form" aria-current="page">Start Your Charter</a>
+      </div>
+    </nav>
+
+    <main id="main-content" class="workspace">
+
+      <nav class="jump-nav" aria-label="Page navigation">
+        <div class="jump-nav__card">
+          <h2>Jump to section</h2>
+          <ol>
+            <li><a href="#charter-basics">Charter Basics</a></li>
+            <li><a href="#purpose-outcomes">Purpose & Outcomes</a></li>
+            <li><a href="#scope-authority">Scope & Authority</a></li>
+            <li><a href="#guiding-principles">Guiding Principles</a></li>
+            <li><a href="#membership-roles">Membership & Roles</a></li>
+            <li><a href="#responsibilities">Responsibilities</a></li>
+            <li><a href="#operating-model">Operating Model</a></li>
+            <li><a href="#advanced-sections">Advanced Sections</a></li>
+            <li><a href="#generate-charter">Generate Charter</a></li>
+          </ol>
+        </div>
+
+        <div class="jump-nav__card jump-nav__card--support">
+          <h2>Draft status</h2>
+          <p class="form-status" id="form-status">Start with the charter basics and purpose sections.</p>
+          <div class="progress-meter" aria-hidden="true">
+            <div class="progress-meter__bar" id="completion-bar"></div>
+          </div>
+          <p class="progress-label" id="completion-text">0% complete</p>
+
+          <div class="field-group">
+            <label for="download-name">Download name</label>
+            <input id="download-name" name="download-name" type="text" value="Data_Governance_Steering_Committee_Charter.docx" />
+            <p class="field-hint">Filename preview: <span id="filename-preview">Data_Governance_Steering_Committee_Charter.docx</span></p>
+          </div>
+
+          <div class="jump-nav__actions">
+            <button type="button" class="button button--secondary button--sidebar" id="fill-starter-content">Load starter content</button>
+            <p class="jump-nav__helper">Use starter content to populate a practical example before exporting.</p>
+          </div>
+
+          <div class="jump-nav__utilities">
+            <p class="utility-label">Form actions</p>
+            <button type="button" class="button button--utility button--sidebar" id="reset-form-button">Reset form</button>
+            <p class="jump-nav__helper">Clears entered content and returns the form to its default state.</p>
+          </div>
+
+          <div class="jump-nav__utilities">
+            <p class="utility-label">Plain-language help</p>
+            <p class="jump-nav__helper">Hover or focus the information icons next to field labels for plain-language definitions and drafting guidance.</p>
+          </div>
+        </div>
+      </nav>
+
+      <div class="content-stack">
+
+        <div class="inline-help-banner" role="note">
+          Use the pages in the top tabs to review Home and Before You Start content before moving into the form.
+        </div>
+        <form class="charter-form" id="charter-form" novalidate="">
+        <section aria-labelledby="charter-basics-title" class="form-card form-card--owner" id="charter-basics">
+        <div class="section-heading">
+        <p class="section-kicker">01</p>
+        <div>
+        <h2 id="charter-basics-title">Charter Basics</h2>
+        <p>Define the committee identity, scope level, and leadership.</p>
+        </div>
+        </div>
+        <div class="field-grid field-grid--two">
+        <div class="field-group">
+        <label for="agency-name">Agency / Department Name <span class="info-chip" title="Enter the formal name of the agency, department, bureau, or program that will own or use this charter.">i</span></label>
+        <input id="agency-name" name="agency-name" required="" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="charter-name">Charter Name <span class="info-chip" title="Provide the official title of the governance body. Use the name people will see in agendas, documents, and approvals.">i</span></label>
+        <input id="charter-name" name="charter-name" required="" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="committee-type">Committee Type <span class="info-chip" title="Choose the governance structure that best matches how this group will operate, such as a steering committee, advisory group, or working group.">i</span></label>
+        <select id="committee-type" name="committee-type">
+        <option value="">Choose the governance structure that best fits this body.</option>
+        <option>Data Governance Steering Committee</option>
+        <option>Advisory Group</option>
+        <option>Data Stewardship Council</option>
+        <option>Working Group</option>
+        <option>Cross-Agency Governance Group</option>
+        <option>Other</option>
+        </select>
+        <input hidden="" id="committee-type-other" name="committee-type-other" placeholder="Describe committee type" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="agency-scope">Organizational Scope <span class="info-chip" title="Identify the organizational level this charter covers, such as one program, one division, the full agency, or multiple agencies.">i</span></label>
+        <select id="agency-scope" name="agency-scope">
+        <option value="">Choose the organizational level this charter covers.</option>
+        <option>Enterprise / Statewide</option>
+        <option>Agency / Department</option>
+        <option>Division / Program / Bureau</option>
+        <option>Cross-Agency / Interagency</option>
+        <option>Project / Initiative</option>
+        <option>Other</option>
+        </select>
+        <input hidden="" id="agency-scope-other" name="agency-scope-other" placeholder="Describe organizational scope" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="executive-sponsor">Executive Sponsor <span class="info-chip" title="Name the senior leader who authorizes the group, supports escalation, and helps remove barriers when decisions need executive backing.">i</span></label>
+        <input id="executive-sponsor" name="executive-sponsor" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="chair-lead">Chair / Lead <span class="info-chip" title="Name the person responsible for running meetings, setting agendas, and keeping the committee focused and moving.">i</span></label>
+        <input id="chair-lead" name="chair-lead" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="effective-date">Effective Date <span class="info-chip" title="Enter the date this charter takes effect. This is often the date it is approved or signed by the executive sponsor.">i</span></label>
+        <input id="effective-date" name="effective-date" type="date"/>
+        </div>
+        <div class="field-group">
+        <label for="term-review-cycle">Term &amp; Review Cycle <span class="info-chip" title="Describe how long the charter remains in effect and how often it should be reviewed or updated.">i</span></label>
+        <input id="term-review-cycle" name="term-review-cycle" placeholder="Example: Reviewed annually and updated as needed" type="text"/>
+        </div>
+        </div>
+        </section>
+        <section aria-labelledby="purpose-outcomes-title" class="form-card form-card--steward" id="purpose-outcomes">
+        <div class="section-heading">
+        <p class="section-kicker">02</p>
+        <div>
+        <h2 id="purpose-outcomes-title">Purpose, Vision, Mission &amp; Outcomes</h2>
+        <p>State why the group exists, the future state it is pursuing, and what success should look like.</p>
+        </div>
+        </div>
+        <div class="field-grid">
+        <div class="field-group">
+        <label for="purpose">Purpose <span class="info-chip" title="Describe the business need or problem this committee exists to address. Focus on what would be missing or broken without it.">i</span></label>
+        <textarea id="purpose" name="purpose" rows="4"></textarea>
+        </div>
+        <div class="field-group">
+        <label for="vision">Vision <span class="info-chip" title="Describe the future state the committee is working toward and the conditions it hopes to create over time.">i</span></label>
+        <textarea id="vision" name="vision" rows="3"></textarea>
+        </div>
+        <div class="field-group">
+        <label for="mission">Mission <span class="info-chip" title="Describe the ongoing work the committee performs to advance the vision and support governance in practice.">i</span></label>
+        <textarea id="mission" name="mission" rows="3"></textarea>
+        </div>
+        <div class="field-grid field-grid--two">
+        <div class="field-group">
+        <label for="objectives">Objectives <span class="field-note-inline">One per line</span></label>
+        <textarea id="objectives" name="objectives" rows="5"></textarea>
+        </div>
+        <div class="field-group">
+        <label for="success-metrics">Success Metrics <span class="field-note-inline">One per line</span></label>
+        <textarea id="success-metrics" name="success-metrics" rows="5"></textarea>
+        </div>
+        </div>
+        </div>
+        </section>
+        <section aria-labelledby="scope-authority-title" class="form-card form-card--custodian" id="scope-authority">
+        <div class="section-heading">
+        <p class="section-kicker">03</p>
+        <div>
+        <h2 id="scope-authority-title">Scope &amp; Authority</h2>
+        <p>Clarify what the group governs, what it does not govern, and how issues escalate.</p>
+        </div>
+        </div>
+        <div class="field-grid">
+        <div class="field-grid field-grid--two">
+        <div class="field-group">
+        <label for="in-scope">In-Scope Activities <span class="field-note-inline">One per line</span></label>
+        <textarea id="in-scope" name="in-scope" rows="5"></textarea>
+        </div>
+        <div class="field-group">
+        <label for="out-of-scope">Out-of-Scope Activities <span class="field-note-inline">One per line</span></label>
+        <textarea id="out-of-scope" name="out-of-scope" rows="5"></textarea>
+        </div>
+        </div>
+        <div class="field-group">
+        <label for="decision-authority">Decision Authority <span class="info-chip" title="Describe the types of decisions this committee can make, recommend, or approve without needing additional authorization.">i</span></label>
+        <select id="decision-authority" name="decision-authority">
+        <option value="">Choose the authority model that best matches how this group makes or recommends decisions.</option>
+        <option>Advisory only</option>
+        <option>Recommends to executive sponsor</option>
+        <option>Delegated within scope</option>
+        <option>Approves standards and practices</option>
+        <option>Escalates major decisions</option>
+        <option>Other</option>
+        </select>
+        <input hidden="" id="decision-authority-other" name="decision-authority-other" placeholder="Describe decision authority" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="escalation-path">Escalation Path <span class="info-chip" title="Explain what happens when the committee cannot resolve an issue, and who or what body receives escalated decisions.">i</span></label>
+        <textarea id="escalation-path" name="escalation-path" rows="4"></textarea>
+        </div>
+        </div>
+        </section>
+        <section aria-labelledby="guiding-principles-title" class="form-card form-card--owner" id="guiding-principles">
+        <div class="section-heading">
+        <p class="section-kicker">04</p>
+        <div>
+        <h2 id="guiding-principles-title">Guiding Principles</h2>
+        <p>Capture the beliefs or operating principles that should shape governance decisions.</p>
+        </div>
+        </div>
+        <div class="field-group">
+        <label for="guiding-principles-input">Guiding Principles <span class="field-note-inline">One per line</span></label>
+        <textarea id="guiding-principles-input" name="guiding-principles" rows="6"></textarea>
+        </div>
+        </section>
+        <section aria-labelledby="membership-roles-title" class="form-card form-card--steward" id="membership-roles">
+        <div class="section-heading">
+        <p class="section-kicker">05</p>
+        <div>
+        <h2 id="membership-roles-title">Membership &amp; Roles</h2>
+        <p>Define who participates and which business and technical perspectives must be represented.</p>
+        </div>
+        </div>
+        <div class="field-group">
+        <label>Committee Members <span class="info-chip" title="List the people or roles that participate in the committee. Include title, committee role, and voting status.">i</span></label>
+        <div class="table-wrap">
+        <table class="members-table">
+        <thead>
+        <tr>
+        <th>Name</th>
+        <th>Title</th>
+        <th>Role</th>
+        <th>Voting Status</th>
+        <th>Remove</th>
+        </tr>
+        </thead>
+        <tbody id="members-tbody"></tbody>
+        </table>
+        </div>
+        <button class="button button--secondary" id="add-member-row" type="button">+ Add member</button>
+        </div>
+        <div class="field-group">
+        <label>Required Functions / Perspectives <span class="info-chip" title="Identify the business, technical, legal, privacy, security, and operational perspectives that should be represented.">i</span></label>
+        <p class="field-note">Select all perspectives that should be represented in the committee.</p>
+        <div class="checkbox-grid" id="required-functions">
+        <label><input type="checkbox" value="Business / Program Leadership"/> Business / Program Leadership</label>
+        <label><input type="checkbox" value="Data Ownership"/> Data Ownership</label>
+        <label><input type="checkbox" value="Data Stewardship"/> Data Stewardship</label>
+        <label><input type="checkbox" value="Data Custodian (IT / Data Platform)"/> Data Custodian (IT / Data Platform)</label>
+        <label><input type="checkbox" value="Information Security"/> Information Security</label>
+        <label><input type="checkbox" value="Privacy / Confidentiality"/> Privacy / Confidentiality</label>
+        <label><input type="checkbox" value="Legal / Compliance"/> Legal / Compliance</label>
+        <label><input type="checkbox" value="Records / Information Management"/> Records / Information Management</label>
+        <label><input type="checkbox" value="Analytics / BI / Reporting"/> Analytics / BI / Reporting</label>
+        <label><input type="checkbox" value="Operations / Service Delivery"/> Operations / Service Delivery</label>
+        <label><input type="checkbox" value="External Partner / Interagency Liaison"/> External Partner / Interagency Liaison</label>
+        <label><input id="required-functions-other-check" type="checkbox" value="Other"/> Other</label>
+        </div>
+        <input hidden="" id="required-functions-other" name="required-functions-other" placeholder="Describe other required function or perspective" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="role-definitions">Role Definitions <span class="info-chip" title="Define the key committee roles so members understand their responsibilities, authority, and expected level of participation.">i</span></label>
+        <textarea id="role-definitions" name="role-definitions" rows="7"></textarea>
+        <button class="button button--utility" id="sort-role-definitions" type="button">Sort role definitions (A–Z)</button>
+        </div>
+        </section>
+        <section aria-labelledby="responsibilities-title" class="form-card form-card--custodian" id="responsibilities">
+        <div class="section-heading">
+        <p class="section-kicker">06</p>
+        <div>
+        <h2 id="responsibilities-title">Responsibilities &amp; Deliverables</h2>
+        <p>Describe the work the committee does and the products it should produce.</p>
+        </div>
+        </div>
+        <div class="field-grid field-grid--two">
+        <div class="field-group">
+        <label for="responsibilities-input">Committee Responsibilities <span class="field-note-inline">One per line</span></label>
+        <textarea id="responsibilities-input" name="responsibilities" rows="6"></textarea>
+        </div>
+        <div class="field-group">
+        <label for="priorities">Annual or Initial Priorities <span class="field-note-inline">One per line</span></label>
+        <textarea id="priorities" name="priorities" rows="6"></textarea>
+        </div>
+        <div class="field-group field-group--full">
+        <label for="deliverables">Key Deliverables <span class="field-note-inline">One per line</span></label>
+        <textarea id="deliverables" name="deliverables" rows="5"></textarea>
+        </div>
+        </div>
+        </section>
+        <section aria-labelledby="operating-model-title" class="form-card form-card--owner" id="operating-model">
+        <div class="section-heading">
+        <p class="section-kicker">07</p>
+        <div>
+        <h2 id="operating-model-title">Operating Model</h2>
+        <p>Set how the committee meets, makes decisions, and maintains governance records.</p>
+        </div>
+        </div>
+        <div class="field-grid field-grid--two">
+        <div class="field-group">
+        <label for="meeting-frequency">Meeting Frequency <span class="info-chip" title="State how often the group meets and, if useful, include the normal timing pattern.">i</span></label>
+        <select id="meeting-frequency" name="meeting-frequency">
+        <option value="">Choose how often the committee meets.</option>
+        <option>Weekly</option>
+        <option>Biweekly</option>
+        <option>Monthly</option>
+        <option>Bimonthly</option>
+        <option>Quarterly</option>
+        <option>Semiannual</option>
+        <option>Annual</option>
+        <option>Other</option>
+        </select>
+        <input hidden="" id="meeting-frequency-other" name="meeting-frequency-other" placeholder="Describe meeting frequency" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="quorum">Quorum <span class="info-chip" title="Define the minimum participation needed for the group to conduct business or make formal decisions.">i</span></label>
+        <select id="quorum" name="quorum">
+        <option value="">Choose how quorum is established for the group.</option>
+        <option>Simple majority of voting members</option>
+        <option>Two-thirds of voting members</option>
+        <option>Chair plus at least half of voting members</option>
+        <option>Presence of required core functions</option>
+        <option>No formal quorum; advisory only</option>
+        <option>Other</option>
+        </select>
+        <input hidden="" id="quorum-other" name="quorum-other" placeholder="Describe quorum rule" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="decision-making">Decision-Making Process <span class="info-chip" title="Describe how the group makes decisions, such as consensus, majority vote, advisory recommendation, or executive approval.">i</span></label>
+        <select id="decision-making" name="decision-making">
+        <option value="">Choose the method the committee uses to make decisions.</option>
+        <option>Consensus</option>
+        <option>Majority vote</option>
+        <option>Advisory recommendation</option>
+        <option>Executive sponsor approval</option>
+        <option>Chair decision after consultation</option>
+        <option>Other</option>
+        </select>
+        <input hidden="" id="decision-making-other" name="decision-making-other" placeholder="Describe decision-making process" type="text"/>
+        </div>
+        <div class="field-group">
+        <label for="meeting-administration">Meeting Administration <span class="info-chip" title="Explain who handles agendas, minutes, action items, decision tracking, and recordkeeping for the group.">i</span></label>
+        <textarea id="meeting-administration" name="meeting-administration" rows="4"></textarea>
+        </div>
+        </div>
+        </section>
+        <section aria-labelledby="advanced-sections-title" class="form-card form-card--steward" id="advanced-sections">
+        <div class="section-heading">
+        <p class="section-kicker">08</p>
+        <div>
+        <h2 id="advanced-sections-title">Advanced Sections</h2>
+        <p>Use these sections when your agency needs more formal governance, legal alignment, or subcommittee structures.</p>
+        </div>
+        </div>
+        <div class="advanced-panel">
+        <div class="advanced-panel__header">
+        <h3>Policy, privacy, security, and sharing</h3>
+        </div>
+        <div class="advanced-panel__body">
+        <div class="field-group">
+        <label for="policy-alignment">Policy / Legal / Regulatory Alignment</label>
+        <textarea id="policy-alignment" name="policy-alignment" rows="4"></textarea>
+        </div>
+        <div class="field-group">
+        <label for="privacy-security">Privacy, Security &amp; Data Release Considerations</label>
+        <textarea id="privacy-security" name="privacy-security" rows="4"></textarea>
+        </div>
+        <div class="field-group">
+        <label for="data-sharing">Data Sharing &amp; Access Considerations</label>
+        <textarea id="data-sharing" name="data-sharing" rows="4"></textarea>
+        </div>
+        </div>
+        </div>
+        <div class="advanced-panel">
+        <div class="advanced-panel__header">
+        <h3>Working groups and subcommittees</h3>
+        </div>
+        <div class="advanced-panel__body">
+        <div class="field-group">
+        <label for="working-groups">Standing Working Groups / Subcommittees <span class="field-note-inline">One per line</span></label>
+        <textarea id="working-groups" name="working-groups" rows="4"></textarea>
+        </div>
+        </div>
+        </div>
+        <div class="advanced-panel">
+        <div class="advanced-panel__header">
+        <h3>Version history</h3>
+        </div>
+        <div class="advanced-panel__body">
+        <div class="field-group">
+        <label for="version-history">Version History <span class="field-note-inline">One per line in the format: Version, Date, Author, Summary of Changes</span></label>
+        <textarea id="version-history" name="version-history" rows="4"></textarea>
+        </div>
+        </div>
+        </div>
+        </section>
+        <section aria-labelledby="generate-charter-title" class="form-card form-card--custodian" id="generate-charter">
+        <div class="section-heading">
+        <p class="section-kicker">09</p>
+        <div>
+        <h2 id="generate-charter-title">Generate your charter</h2>
+        <p>Use the starter content option to populate a practical example before exporting.</p>
+        </div>
+        </div>
+        <div class="action-row">
+        <button class="button button--primary button--large" type="submit">Generate Charter (.docx)</button>
+        </div>
+        </section>
+        </form>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
