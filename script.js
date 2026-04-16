@@ -1,595 +1,1512 @@
-const form = document.getElementById('charter-form');
-const statusEl = document.getElementById('form-status');
-const fillButton = document.getElementById('fill-starter-content');
-const downloadNameInput = document.getElementById('download-name');
-const filenamePreview = document.getElementById('filename-preview');
-const completionText = document.getElementById('completion-text');
-const completionBar = document.getElementById('completion-bar');
-const submitButton = form?.querySelector('button[type="submit"]');
-const submitLabel = submitButton?.textContent?.trim() || 'Generate Charter (.docx)';
-const membersTbody = document.getElementById('members-tbody');
-const addMemberBtn = document.getElementById('add-member-row');
-const sortRoleDefinitionsBtn = document.getElementById('sort-role-definitions');
-const jumpTopButton = document.getElementById('jump-to-top');
-const resetButton = document.getElementById('reset-form-button');
+document.addEventListener('DOMContentLoaded', () => {
+  // Cache frequently accessed DOM nodes and shared UI state.
+  const form = document.getElementById('charter-form');
+  const statusEl = document.getElementById('form-status');
+  const fillButton = document.getElementById('fill-starter-content');
+  const filenamePreview = document.getElementById('filename-preview');
+  const completionText = document.getElementById('completion-text');
+  const completionBar = document.getElementById('completion-bar');
+  const submitButton = form?.querySelector('button[type="submit"]');
+  const submitLabel = submitButton?.textContent?.trim() || 'Generate Charter (.docx)';
+  const membersTbody = document.getElementById('members-tbody');
+  const addMemberBtn = document.getElementById('add-member-row');
+  const sortRoleDefinitionsBtn = document.getElementById('sort-role-definitions');
+  const jumpTopButton = document.getElementById('jump-to-top');
+  const resetButton = document.getElementById('reset-form-button');
 
-const REQUIRED_FIELD_IDS = ['agency-name', 'charter-name'];
-const PROGRESS_FIELD_IDS = [
-  'agency-name',
-  'charter-name',
-  'committee-type',
-  'agency-scope',
-  'purpose',
-  'vision',
-  'mission',
-  'in-scope',
-  'guiding-principles-input',
-  'responsibilities-input',
-  'meeting-frequency',
-  'decision-making'
-];
+  let docx = null;
+  let initialFormSnapshot = '';
 
-const DEFAULT_ROLE_DEFINITION_LINES = [
-  'Executive Sponsor: Provides executive support, alignment, and escalation authority.',
-  'Chair: Leads meetings, sets priorities, and guides committee decisions.',
-  'Members: Participate in deliberation, decision-making, and follow-through.',
-  'Advisors: Provide subject matter expertise in support of the committee.'
-];
-
-const FUNCTION_TO_ROLE_DEFINITIONS = {
-  'Business / Program Leadership': 'Business / Program Leadership: Senior leaders representing business or program priorities.',
-  'Data Ownership': 'Data Ownership: Staff that own the purpose, use, access, and sharing expectations for the data asset.',
-  'Data Stewardship': 'Data Stewardship: Staff responsible for operational quality, definitions, and day-to-day governance practices.',
-  'Data Custodian (IT / Data Platform)': 'Data Custodian (IT / Data Platform): Technical staff supporting systems, integration, or data platforms.',
-  'Information Security': 'Information Security: Staff representing security requirements and risk controls.',
-  'Privacy / Confidentiality': 'Privacy / Confidentiality: Staff representing privacy, confidentiality, or disclosure requirements.',
-  'Legal / Compliance': 'Legal / Compliance: Staff representing statutory, regulatory, contractual, or policy obligations.',
-  'Records / Information Management': 'Records / Information Management: Staff representing retention, records management, or information lifecycle practices.',
-  'Analytics / BI / Reporting': 'Analytics / BI / Reporting: Staff representing reporting, dashboards, analytics, or downstream use.',
-  'Operations / Service Delivery': 'Operations / Service Delivery: Staff representing operational processes affected by the data.',
-  'External Partner / Interagency Liaison': 'External Partner / Interagency Liaison: Staff representing partner coordination or external participation.'
-};
-
-const STARTER_CONTENT = {
-  'agency-name': 'Department of Health',
-  'charter-name': 'Data Governance Steering Committee Charter',
-  'committee-type': 'Data Governance Steering Committee',
-  'agency-scope': 'Agency / Department',
-  'executive-sponsor': 'Deputy Secretary of Health',
-  'chair-lead': 'Director of Enterprise Data Strategy',
-  'term-review-cycle': 'This charter remains in effect until retired and should be reviewed annually.',
-  'purpose': 'Provide a clear forum for governance decisions related to shared departmental data, standards, access, and quality improvement.',
-  'vision': 'Trusted, well-governed data that supports consistent operations, informed decisions, and responsible sharing.',
-  'mission': 'Guide governance decisions, clarify ownership and stewardship expectations, and support practical coordination across business and technical teams.',
-  'objectives': 'Define governance priorities and decisions\nStandardize key data definitions and practices\nSupport issue escalation and resolution\nImprove coordination across programs and technology teams',
-  'success-metrics': 'Priority decisions are documented and tracked\nMeeting participation includes required perspectives\nData standards and definitions are approved and reused\nEscalated issues are resolved through a defined path',
-  'in-scope': 'Shared data standards\nCross-program governance issues\nData access and sharing practices\nPriority data quality issues',
-  'out-of-scope': 'Day-to-day system administration\nProject management for unrelated initiatives\nIndependent decisions that remain fully within a single program',
-  'decision-authority': 'Recommends to executive sponsor',
-  'escalation-path': 'Issues the committee cannot resolve are escalated to the executive sponsor with a summary of the options considered and the recommended path forward.',
-  'guiding-principles-input': 'Use data responsibly and consistently\nClarify decision authority before escalation\nDocument decisions and ownership\nInclude the right business and technical perspectives',
-  'role-definitions': DEFAULT_ROLE_DEFINITION_LINES.join('\n'),
-  'responsibilities-input': 'Review governance issues and recommendations\nMaintain shared governance priorities\nSupport standards, definitions, and ownership decisions\nTrack actions and follow-up items',
-  'priorities': 'Launch the committee and cadence\nApprove initial governance priorities\nCreate a shared decision log\nClarify data ownership and stewardship expectations',
-  'deliverables': 'Approved charter\nDecision log\nShared standards or guidance\nPeriodic status updates',
-  'meeting-frequency': 'Monthly',
-  'quorum': 'Simple majority of voting members',
-  'decision-making': 'Consensus',
-  'meeting-administration': 'The chair and support staff prepare agendas, document meeting notes, track action items, and maintain governance records.',
-  'policy-alignment': 'Relevant agency policies, statewide data standards, privacy requirements, and records management obligations should be reviewed as part of formal governance decisions.',
-  'privacy-security': 'Privacy, security, and legal review should be involved when decisions affect restricted data, public release, or external sharing.',
-  'data-sharing': 'The committee should support consistent review of internal sharing, external sharing, access requests, and data use considerations.',
-  'working-groups': 'Data Standards Working Group\nAccess and Sharing Review Group',
-  'version-history': '1.0, 2026-04-16, Enterprise Data Strategy Lead, Initial draft generated from charter tool'
-};
-
-let initialFormSnapshot = '';
-
-
-function slugifyFileName(value) {
-  const cleaned = value
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '_')
-    .replace(/_+/g, '_');
-
-  return cleaned || 'Data_Governance_Steering_Committee_Charter';
-}
-
-function updateDownloadNameFromCharterName() {
-  const charterName = document.getElementById('charter-name')?.value || '';
-  if (!downloadNameInput) return;
-
-  const nextName = `${slugifyFileName(charterName)}.docx`;
-  if (!charterName.trim()) {
-    downloadNameInput.value = 'Data_Governance_Steering_Committee_Charter.docx';
-  } else {
-    downloadNameInput.value = nextName;
-  }
-  updateFilenamePreview();
-}
-
-function updateFilenamePreview() {
-  if (!downloadNameInput || !filenamePreview) return;
-  const value = downloadNameInput.value.trim() || 'Data_Governance_Steering_Committee_Charter.docx';
-  filenamePreview.textContent = value.endsWith('.docx') ? value : `${value}.docx`;
-}
-
-function linesFromValue(value) {
-  return String(value || '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function getSelectedRequiredFunctions() {
-  const container = document.getElementById('required-functions');
-  if (!container) return [];
-  const values = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
-    .map((input) => input.value)
-    .filter((value) => value && value !== 'Other');
-
-  const otherValue = document.getElementById('required-functions-other')?.value?.trim();
-  if (document.getElementById('required-functions-other-check')?.checked && otherValue) {
-    values.push(otherValue);
+  if (!form) {
+    console.error('Charter form not found.');
+    return;
   }
 
-  return values;
-}
+  const MEMBER_COLUMNS = ['Name', 'Title', 'Role', 'Voting Status'];
+  const DEFAULT_ROLE_DEFINITION_LINES = [
+    'Executive Sponsor: Provides executive support, alignment, and escalation authority.',
+    'Chair: Leads meetings, sets priorities, and guides committee decisions.',
+    'Members: Participate in deliberation, decision-making, and follow-through.',
+    'Advisors: Provide subject matter expertise in support of the committee.'
+  ];
+  const FUNCTION_TO_ROLE_DEFINITIONS = {
+    'Business / Program Leadership': 'Business / Program Leadership: Senior leaders representing business or program priorities.',
+    'Data Ownership':
+      'Data Ownership: Staff that own the purpose, use, access, and sharing expectations for the data asset.',
+    'Data Stewardship':
+      'Data Stewardship: Staff responsible for operational quality, definitions, and day-to-day governance practices.',
+    'Data Custodian (IT / Data Platform)':
+      'Data Custodian (IT / Data Platform): Technical staff supporting systems, integration, or data platforms.',
+    'Information Security': 'Information Security: Staff representing security requirements and risk controls.',
+    'Privacy / Confidentiality':
+      'Privacy / Confidentiality: Staff representing privacy, confidentiality, or disclosure requirements.',
+    'Legal / Compliance':
+      'Legal / Compliance: Staff representing statutory, regulatory, contractual, or policy obligations.',
+    'Records / Information Management':
+      'Records / Information Management: Staff representing retention, records management, or information lifecycle practices.',
+    'Analytics / BI / Reporting':
+      'Analytics / BI / Reporting: Staff representing reporting, dashboards, analytics, or downstream use.',
+    'Operations / Service Delivery':
+      'Operations / Service Delivery: Staff representing operational processes affected by the data.',
+    'External Partner / Interagency Liaison':
+      'External Partner / Interagency Liaison: Staff representing partner coordination or external participation.'
+  };
+  const REQUIRED_FIELD_IDS = ['agency-name', 'charter-name'];
+  const PROGRESS_FIELD_IDS = [
+    'agency-name',
+    'charter-name',
+    'committee-type',
+    'agency-scope',
+    'purpose',
+    'vision',
+    'mission',
+    'in-scope',
+    'guiding-principles',
+    'required-functions',
+    'responsibilities',
+    'meeting-frequency',
+    'decision-making'
+  ];
 
-function toggleOtherInput(selectId, otherInputId) {
-  const selectEl = document.getElementById(selectId);
-  const otherInput = document.getElementById(otherInputId);
-  if (!selectEl || !otherInput) return;
-
-  const isOther = selectEl.value === 'Other';
-  otherInput.hidden = !isOther;
-  if (!isOther) {
-    otherInput.value = '';
-  }
-}
-
-function handleRequiredFunctionsOther() {
-  const checkbox = document.getElementById('required-functions-other-check');
-  const otherInput = document.getElementById('required-functions-other');
-  if (!checkbox || !otherInput) return;
-  otherInput.hidden = !checkbox.checked;
-  if (!checkbox.checked) {
-    otherInput.value = '';
-  }
-}
-
-function buildRoleDefinitionsFromFunctions() {
-  const textarea = document.getElementById('role-definitions');
-  if (!textarea) return;
-
-  const selectedFunctions = getSelectedRequiredFunctions();
-  const currentLines = new Set(linesFromValue(textarea.value));
-  if (!currentLines.size) {
-    DEFAULT_ROLE_DEFINITION_LINES.forEach((line) => currentLines.add(line));
-  }
-
-  selectedFunctions.forEach((value) => {
-    if (FUNCTION_TO_ROLE_DEFINITIONS[value]) {
-      currentLines.add(FUNCTION_TO_ROLE_DEFINITIONS[value]);
+  // Configuration metadata used to render structured controls and helper text.
+  const STRUCTURED_FIELDS = {
+    'committee-type': {
+      type: 'select',
+      placeholder: 'Select committee type',
+      noteId: 'committee-type-note',
+      otherFieldId: 'committee-type-other',
+      otherWrapId: 'committee-type-other-wrap',
+      defaultNote: 'Choose the governance structure that best fits this body.',
+      options: [
+        {
+          value: 'Data Governance Steering Committee',
+          definition: 'Formal body with oversight and decision-making authority for governance.'
+        },
+        {
+          value: 'Data Governance Advisory Group',
+          definition: 'Provides guidance and recommendations, but does not usually hold final authority.'
+        },
+        {
+          value: 'Data Stewardship Council',
+          definition: 'Focuses on operational governance, stewardship, data quality, and standards.'
+        },
+        {
+          value: 'Working Group',
+          definition: 'Temporary or task-focused group addressing a specific governance need.'
+        },
+        {
+          value: 'Cross-Agency Governance Group',
+          definition: 'Coordinates governance across multiple agencies or departments.'
+        },
+        {
+          value: 'Other',
+          definition: 'Use when the group follows a different or custom governance model.'
+        }
+      ]
+    },
+    'agency-scope': {
+      type: 'select',
+      placeholder: 'Select organizational scope',
+      noteId: 'agency-scope-note',
+      otherFieldId: 'agency-scope-other',
+      otherWrapId: 'agency-scope-other-wrap',
+      defaultNote: 'Choose the organizational level this charter covers.',
+      options: [
+        {
+          value: 'Enterprise / Statewide',
+          definition: 'Applies across the full enterprise or state government.'
+        },
+        {
+          value: 'Agency / Department',
+          definition: 'Applies across one agency or department.'
+        },
+        {
+          value: 'Division / Program / Bureau',
+          definition: 'Applies to one major internal unit or program.'
+        },
+        {
+          value: 'Cross-Agency / Interagency',
+          definition: 'Covers multiple agencies or departments working together.'
+        },
+        {
+          value: 'Project / Initiative Specific',
+          definition: 'Limited to one named initiative, program, or temporary effort.'
+        },
+        {
+          value: 'Other',
+          definition: 'Use for a scope that does not fit the common models above.'
+        }
+      ]
+    },
+    'decision-authority': {
+      type: 'select',
+      placeholder: 'Select decision authority',
+      noteId: 'decision-authority-note',
+      otherFieldId: 'decision-authority-other',
+      otherWrapId: 'decision-authority-other-wrap',
+      defaultNote: 'Choose the authority model that best matches how this group makes or recommends decisions.',
+      options: [
+        {
+          value: 'Advisory Only',
+          definition: 'The group provides input and recommendations but does not make binding decisions.'
+        },
+        {
+          value: 'Recommends to Executive Sponsor',
+          definition: 'The group develops recommendations that require sponsor approval.'
+        },
+        {
+          value: 'Delegated Authority Within Scope',
+          definition: 'The group can make binding decisions within the authority defined in the charter.'
+        },
+        {
+          value: 'Approves Standards and Practices',
+          definition: 'The group has authority to approve governance standards, definitions, or operating practices.'
+        },
+        {
+          value: 'Escalates Major Decisions',
+          definition: 'The group can decide routine matters but escalates major or enterprise-impact decisions.'
+        },
+        {
+          value: 'Other',
+          definition: 'Use when the decision model is different or more complex.'
+        }
+      ]
+    },
+    'required-functions': {
+      type: 'checkbox',
+      containerId: 'required-functions-options',
+      otherFieldId: 'required-functions-other',
+      otherWrapId: 'required-functions-other-wrap',
+      options: [
+        {
+          value: 'Business / Program Leadership',
+          definition: 'Senior leaders representing business or program priorities.'
+        },
+        {
+          value: 'Data Ownership',
+          definition: 'Persons accountable for a data domain and its use.'
+        },
+        {
+          value: 'Data Stewardship',
+          definition: 'Persons responsible for operational quality, definitions, and day-to-day governance practices.'
+        },
+        {
+          value: 'Data Custodian (IT / Data Platform)',
+          definition: 'Technical staff supporting systems, integration, or data platforms.'
+        },
+        {
+          value: 'Information Security',
+          definition: 'Staff representing security requirements and risk controls.'
+        },
+        {
+          value: 'Privacy / Confidentiality',
+          definition: 'Staff representing privacy, confidentiality, or disclosure requirements.'
+        },
+        {
+          value: 'Legal / Compliance',
+          definition: 'Staff representing statutory, regulatory, contractual, or policy obligations.'
+        },
+        {
+          value: 'Records / Information Management',
+          definition: 'Staff representing retention, records management, or information lifecycle practices.'
+        },
+        {
+          value: 'Analytics / BI / Reporting',
+          definition: 'Staff representing reporting, dashboards, analytics, or downstream use.'
+        },
+        {
+          value: 'Operations / Service Delivery',
+          definition: 'Staff representing operational processes affected by the data.'
+        },
+        {
+          value: 'External Partner / Interagency Liaison',
+          definition: 'Staff representing partner coordination or external participation.'
+        },
+        {
+          value: 'Other',
+          definition: 'Use for a required perspective not captured above.'
+        }
+      ]
+    },
+    'meeting-frequency': {
+      type: 'select',
+      placeholder: 'Select meeting frequency',
+      noteId: 'meeting-frequency-note',
+      otherFieldId: 'meeting-frequency-other',
+      otherWrapId: 'meeting-frequency-other-wrap',
+      defaultNote: 'Choose how often the committee meets.',
+      options: [
+        { value: 'Weekly', definition: 'Meets every week.' },
+        { value: 'Biweekly', definition: 'Meets every two weeks.' },
+        { value: 'Monthly', definition: 'Meets once each month.' },
+        { value: 'Bimonthly', definition: 'Meets every two months.' },
+        { value: 'Quarterly', definition: 'Meets once each quarter.' },
+        { value: 'Semiannual', definition: 'Meets twice per year.' },
+        { value: 'Annual', definition: 'Meets once per year.' },
+        { value: 'As Needed', definition: 'Meets based on demand rather than a fixed schedule.' },
+        { value: 'Other', definition: 'Use for a different schedule.' }
+      ]
+    },
+    quorum: {
+      type: 'select',
+      placeholder: 'Select quorum rule',
+      noteId: 'quorum-note',
+      otherFieldId: 'quorum-other',
+      otherWrapId: 'quorum-other-wrap',
+      defaultNote: 'Choose how quorum is established for the group.',
+      options: [
+        {
+          value: 'Majority of voting members',
+          definition: 'More than half of designated voting members must be present.'
+        },
+        {
+          value: 'Majority of total members',
+          definition: 'More than half of all committee members must be present, whether voting or not.'
+        },
+        {
+          value: 'Fixed number',
+          definition: 'A specific minimum number of members is required.'
+        },
+        {
+          value: 'Percentage threshold',
+          definition: 'A defined percentage of membership is required.'
+        },
+        {
+          value: 'Functional representation required',
+          definition: 'Quorum requires representation from specific roles, divisions, or functions.'
+        },
+        {
+          value: 'Chair required',
+          definition: 'The Chair or delegated lead must be present for quorum.'
+        },
+        {
+          value: 'No formal quorum',
+          definition: 'The group may meet and proceed without a minimum attendance requirement.'
+        },
+        {
+          value: 'Other',
+          definition: 'Use a custom quorum rule.'
+        }
+      ]
+    },
+    'decision-making': {
+      type: 'select',
+      placeholder: 'Select decision-making process',
+      noteId: 'decision-making-note',
+      otherFieldId: 'decision-making-other',
+      otherWrapId: 'decision-making-other-wrap',
+      defaultNote: 'Choose the method the committee uses to make decisions.',
+      options: [
+        {
+          value: 'Consensus',
+          definition: 'The group works toward agreement without a formal vote whenever possible.'
+        },
+        {
+          value: 'Simple Majority Vote',
+          definition: 'A decision passes with more than half of votes cast.'
+        },
+        {
+          value: 'Supermajority Vote',
+          definition: 'A decision passes only when a higher threshold is met, such as two-thirds.'
+        },
+        {
+          value: 'Chair Determines After Input',
+          definition: 'The chair makes the decision after hearing group input.'
+        },
+        {
+          value: 'Sponsor Approval Required',
+          definition: 'The group discusses and recommends, but final approval rests with the sponsor.'
+        },
+        {
+          value: 'Advisory Recommendation Only',
+          definition: 'The group documents recommendations for another authority to decide.'
+        },
+        {
+          value: 'Other',
+          definition: 'Use for another decision approach.'
+        }
+      ]
     }
-  });
+  };
 
-  textarea.value = Array.from(currentLines).join('\n');
-}
+  const MEMBER_ROLE_OPTIONS = ['Chair', 'Member', 'Advisor'];
+  const MEMBER_VOTING_OPTIONS = ['Voting', 'Non-Voting'];
 
-function createMemberRow(member = {}) {
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" name="member-name" value="${member.name || ''}" /></td>
-    <td><input type="text" name="member-title" value="${member.title || ''}" /></td>
-    <td><input type="text" name="member-role" value="${member.role || ''}" /></td>
-    <td>
-      <select name="member-voting">
-        <option value="">Select</option>
-        <option value="Voting" ${member.voting === 'Voting' ? 'selected' : ''}>Voting</option>
-        <option value="Non-Voting" ${member.voting === 'Non-Voting' ? 'selected' : ''}>Non-Voting</option>
-      </select>
-    </td>
-    <td><button type="button" class="remove-row" aria-label="Remove member row">Remove</button></td>
-  `;
+  const DEFAULT_MEMBERS = [
+    { name: 'Jane Doe', title: 'Chief Data Officer', role: 'Chair', voting: 'Voting' },
+    { name: 'John Smith', title: 'Program Director', role: 'Member', voting: 'Voting' },
+    { name: 'Mary Jones', title: 'Privacy Officer', role: 'Advisor', voting: 'Non-Voting' },
+    { name: 'Alex Brown', title: 'IT Director', role: 'Member', voting: 'Voting' }
+  ];
 
-  tr.querySelector('.remove-row')?.addEventListener('click', () => {
-    tr.remove();
-    updateProgress();
-  });
-
-  tr.querySelectorAll('input, select').forEach((element) => {
-    element.addEventListener('input', updateProgress);
-    element.addEventListener('change', updateProgress);
-  });
-
-  return tr;
-}
-
-function seedDefaultMembers() {
-  if (!membersTbody) return;
-  membersTbody.innerHTML = '';
-  [
-    { name: 'Deputy Secretary of Health', title: 'Deputy Secretary', role: 'Executive Sponsor', voting: 'Non-Voting' },
-    { name: 'Director of Enterprise Data Strategy', title: 'Director', role: 'Chair', voting: 'Voting' },
-    { name: 'Program Representative', title: 'Program Manager', role: 'Member', voting: 'Voting' }
-  ].forEach((member) => membersTbody.appendChild(createMemberRow(member)));
-}
-
-function serializeFormState() {
-  const data = new FormData(form);
-  return JSON.stringify(Array.from(data.entries()));
-}
-
-function requiredFieldsCompleteCount() {
-  return REQUIRED_FIELD_IDS.reduce((count, id) => {
-    const el = document.getElementById(id);
-    return count + (el && String(el.value).trim() ? 1 : 0);
-  }, 0);
-}
-
-function progressFieldCompleteCount() {
-  return PROGRESS_FIELD_IDS.reduce((count, id) => {
-    const el = document.getElementById(id);
-    return count + (el && String(el.value).trim() ? 1 : 0);
-  }, 0);
-}
-
-function updateProgress() {
-  if (!statusEl || !completionBar || !completionText) return;
-
-  const requiredComplete = requiredFieldsCompleteCount();
-  const progressComplete = progressFieldCompleteCount();
-  const progressPercent = Math.round((progressComplete / PROGRESS_FIELD_IDS.length) * 100);
-
-  completionBar.style.width = `${progressPercent}%`;
-  completionText.textContent = `${progressPercent}% complete`;
-
-  if (requiredComplete < REQUIRED_FIELD_IDS.length) {
-    statusEl.textContent = 'Start with the charter basics and purpose sections.';
-  } else if (progressPercent < 40) {
-    statusEl.textContent = 'Good start. Continue with scope, authority, and guiding principles.';
-  } else if (progressPercent < 75) {
-    statusEl.textContent = 'Your draft is taking shape. Review membership, responsibilities, and operating model details.';
-  } else {
-    statusEl.textContent = 'Your draft is nearly ready. Review the sections, then generate the Word document.';
-  }
-}
-
-function setValue(id, value) {
-  const element = document.getElementById(id);
-  if (!element) return;
-  element.value = value;
-}
-
-function loadStarterContent() {
-  Object.entries(STARTER_CONTENT).forEach(([id, value]) => setValue(id, value));
-
-  seedDefaultMembers();
-
-  toggleOtherInput('committee-type', 'committee-type-other');
-  toggleOtherInput('agency-scope', 'agency-scope-other');
-  toggleOtherInput('decision-authority', 'decision-authority-other');
-  toggleOtherInput('meeting-frequency', 'meeting-frequency-other');
-  toggleOtherInput('quorum', 'quorum-other');
-  toggleOtherInput('decision-making', 'decision-making-other');
-
-  const requiredFunctionsContainer = document.getElementById('required-functions');
-  if (requiredFunctionsContainer) {
-    const desired = [
+  const DEFAULTS = {
+    'agency-name': 'Department of Example',
+    'charter-name': 'Draft Data Governance Steering Committee',
+    'committee-type': 'Data Governance Steering Committee',
+    'agency-scope': 'Agency / Department',
+    'executive-sponsor': 'Secretary Example Sponsor',
+    'chair-lead': 'Committee Chair',
+    'effective-date': new Date().toISOString().slice(0, 10),
+    'term-review': 'Effective until revised or rescinded; reviewed annually.',
+    purpose:
+      'The purpose of this committee is to establish direction, accountability, and oversight for the management and use of data as a strategic asset in support of agency operations, policy, reporting, and responsible innovation.',
+    vision:
+      'Trusted, timely, secure, and well-understood data supports better services, decision-making, and public stewardship.',
+    mission:
+      'To guide agency-wide data governance through clear roles, practical standards, coordinated decision-making, and responsible access and use.',
+    objectives: [
+      'Promote consistent accountability for priority data assets.',
+      'Improve data quality, documentation, and standardization.',
+      'Support lawful, secure, and efficient data sharing and access.',
+      'Resolve cross-functional data issues and decision points.',
+      'Advance a practical, sustainable culture of data governance.'
+    ].join('\n'),
+    'success-metrics': [
+      'Priority data domains have assigned owners and stewards.',
+      'Core definitions and standards are documented and approved.',
+      'Data issues are tracked and resolved through a defined process.',
+      'Requests for data access or sharing are reviewed consistently.',
+      'Governance deliverables are completed according to committee priorities.'
+    ].join('\n'),
+    'in-scope': [
+      'Data standards, definitions, and business rules.',
+      'Data quality priorities and issue resolution.',
+      'Metadata, documentation, and stewardship practices.',
+      'Data access, sharing, and escalation workflows.',
+      'Governance priorities related to reporting, analytics, and responsible data use.'
+    ].join('\n'),
+    'out-of-scope': [
+      'Routine system administration and platform maintenance.',
+      'Project management activities outside approved governance responsibilities.',
+      'Operational decisions that remain within program management authority unless escalated.'
+    ].join('\n'),
+    'decision-authority': 'Approves Standards and Practices',
+    'escalation-path':
+      'Issues that cannot be resolved by the committee, or that carry enterprise, legal, privacy, security, or significant operational impact, will be escalated through the executive sponsor and appropriate leadership channels.',
+    'guiding-principles': [
+      'Treat data as a strategic asset.',
+      'Protect sensitive and regulated information.',
+      'Promote responsible access and appropriate sharing.',
+      'Standardize where practical while respecting business context.',
+      'Assign clear accountability for data decisions.',
+      'Use governance to enable operations, not create unnecessary burden.'
+    ].join('\n'),
+    'required-functions': [
       'Business / Program Leadership',
       'Data Ownership',
       'Data Stewardship',
       'Data Custodian (IT / Data Platform)',
-      'Information Security',
       'Privacy / Confidentiality',
-      'Legal / Compliance'
+      'Legal / Compliance',
+      'Analytics / BI / Reporting'
+    ],
+    'role-definitions': DEFAULT_ROLE_DEFINITION_LINES.join('\n'),
+    responsibilities: [
+      'Review and approve governance priorities, standards, and supporting guidance.',
+      'Clarify ownership, stewardship, and accountability for priority data assets.',
+      'Monitor governance issues, risks, and implementation progress.',
+      'Resolve or escalate conflicts related to data definitions, quality, access, and use.',
+      'Support practical coordination across business, technical, privacy, and legal stakeholders.'
+    ].join('\n'),
+    'annual-priorities': [
+      'Establish a governance issue intake and tracking process.',
+      'Document core data elements and definitions.',
+      'Assign accountable roles for priority datasets.',
+      'Create or refine standard templates for governance and sharing.'
+    ].join('\n'),
+    'key-deliverables': [
+      'Committee charter',
+      'Governance issue log',
+      'Priority data glossary or data dictionary',
+      'Standards, guidelines, or decision records',
+      'Periodic status or progress summary'
+    ].join('\n'),
+    'meeting-frequency': 'Monthly',
+    quorum: 'Majority of voting members',
+    'decision-making': 'Consensus',
+    'meeting-administration':
+      'The chair or designee will prepare agendas, document decisions, maintain meeting records, and track action items and escalations.',
+    'policy-alignment':
+      'The committee will operate in alignment with applicable laws, regulations, statewide policy, agency policy, privacy requirements, security expectations, and records management obligations.',
+    'privacy-security-considerations':
+      'Privacy, security, legal, and other control functions will be engaged when governance issues involve confidential data, regulated data, release decisions, new uses of data, or elevated risk.',
+    'data-sharing':
+      'The committee may review or support processes related to internal sharing, external sharing, access requests, and associated agreements or approvals, consistent with agency and enterprise requirements.',
+    subcommittees: 'Data Quality Working Group\nMetadata and Standards Working Group',
+    'version-history': `1.0, ${new Date().toISOString().slice(0, 10)}, System, Initial charter generated`
+  };
+
+  // Show/hide the "Back to top" control based on scroll depth.
+  function getJumpThreshold() {
+    return Math.max(360, Math.round(window.innerHeight * 0.45));
+  }
+
+  function updateJumpTopVisibility() {
+    if (!jumpTopButton) return;
+    const shouldShow = window.scrollY > getJumpThreshold();
+    jumpTopButton.classList.toggle('is-visible', shouldShow);
+  }
+
+  function scrollToTop() {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
+
+  function resolveDocx() {
+    const library = window.docx;
+    if (!library) return null;
+
+    const requiredKeys = [
+      'Document',
+      'Paragraph',
+      'TextRun',
+      'Table',
+      'TableRow',
+      'TableCell',
+      'HeadingLevel',
+      'AlignmentType',
+      'WidthType',
+      'TableLayoutType',
+      'VerticalAlign',
+      'BorderStyle',
+      'Packer'
     ];
-    requiredFunctionsContainer.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-      checkbox.checked = desired.includes(checkbox.value);
+
+    return requiredKeys.every((key) => key in library) ? library : null;
+  }
+
+  // Generic value helpers keep null/empty handling consistent across fields.
+  function getField(id) {
+    return document.getElementById(id);
+  }
+
+  function getStructuredConfig(id) {
+    return STRUCTURED_FIELDS[id] || null;
+  }
+
+  function getOptionalValue(id) {
+    const field = getField(id);
+    if (!field || typeof field.value !== 'string') return '';
+    return field.value.trim();
+  }
+
+  function getTextValue(id, fallback = '') {
+    const value = getOptionalValue(id);
+    return value || fallback;
+  }
+
+  function setTextValue(id, value) {
+    const field = getField(id);
+    if (!field) return;
+    field.value = value;
+  }
+
+  function mergeUniqueLines(existingLines, linesToAdd) {
+    const unique = [];
+    const seen = new Set();
+
+    [...existingLines, ...linesToAdd].forEach((line) => {
+      const normalized = String(line || '').trim();
+      if (!normalized) return;
+      const key = normalized.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      unique.push(normalized);
+    });
+
+    return unique;
+  }
+
+  function getSuggestedRoleDefinitionLines() {
+    const values = getStructuredValues('required-functions');
+
+    return values
+      .map((value) => FUNCTION_TO_ROLE_DEFINITIONS[String(value || '').trim()])
+      .filter(Boolean);
+  }
+
+  function syncRoleDefinitionsFromRequiredFunctions() {
+    const roleDefinitionsField = getField('role-definitions');
+    if (!roleDefinitionsField) return;
+
+    const existing = toLines(roleDefinitionsField.value);
+    const suggested = getSuggestedRoleDefinitionLines();
+    const merged = mergeUniqueLines(existing, suggested);
+
+    if (merged.join('\n') !== existing.join('\n')) {
+      roleDefinitionsField.value = merged.join('\n');
+    }
+  }
+
+  function toLines(text) {
+    return String(text || '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  function sortRoleDefinitions() {
+    const roleDefinitionsField = getField('role-definitions');
+    if (!roleDefinitionsField) return;
+
+    const sortedLines = toLines(roleDefinitionsField.value).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
+
+    roleDefinitionsField.value = sortedLines.join('\n');
+    updateHelpers();
+  }
+
+  function splitWithLimit(line, expectedParts) {
+    const rawParts = String(line || '')
+      .split(',')
+      .map((part) => part.trim());
+
+    if (rawParts.length <= expectedParts) {
+      while (rawParts.length < expectedParts) rawParts.push('');
+      return rawParts;
+    }
+
+    const fixed = rawParts.slice(0, expectedParts - 1);
+    fixed.push(rawParts.slice(expectedParts - 1).join(', ').trim());
+    return fixed;
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(`${dateString}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return dateString;
+
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   }
 
-  handleRequiredFunctionsOther();
-  buildRoleDefinitionsFromFunctions();
-  updateDownloadNameFromCharterName();
-  updateProgress();
-}
+  function safeFileName(text) {
+    const cleaned = String(text || 'Data_Governance_Charter')
+      .trim()
+      .replace(/[^a-z0-9]+/gi, '_')
+      .replace(/^_+|_+$/g, '');
+    return cleaned || 'Data_Governance_Charter';
+  }
 
-function resetFormToInitial() {
-  form.reset();
-  if (membersTbody) {
+  function setStatus(message = '', state = '') {
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.classList.remove('success', 'error');
+    if (state) statusEl.classList.add(state);
+  }
+
+  function setAriaInvalid(id, invalid) {
+    const field = getField(id);
+    if (!field) return;
+    if (invalid) {
+      field.setAttribute('aria-invalid', 'true');
+    } else {
+      field.removeAttribute('aria-invalid');
+    }
+  }
+
+  function validateForm() {
+    let firstInvalid = null;
+
+    REQUIRED_FIELD_IDS.forEach((id) => {
+      const invalid = !getOptionalValue(id);
+      setAriaInvalid(id, invalid);
+      if (invalid && !firstInvalid) firstInvalid = getField(id);
+    });
+
+    return { isValid: !firstInvalid, firstInvalid };
+  }
+
+  function renderStructuredSelect(id, config) {
+    const select = getField(id);
+    if (!select) return;
+
+    select.innerHTML = '';
+    const placeholderOption = new Option(config.placeholder, '');
+    placeholderOption.title = config.defaultNote || config.placeholder || '';
+    select.appendChild(placeholderOption);
+    config.options.forEach((option) => {
+      const selectOption = new Option(option.value, option.value);
+      selectOption.title = option.definition || option.value;
+      selectOption.dataset.definition = option.definition || '';
+      select.appendChild(selectOption);
+    });
+  }
+
+  function renderStructuredCheckboxes(id, config) {
+    const container = getField(config.containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+    config.options.forEach((option, index) => {
+      const itemId = `${id}-${index}`;
+      const label = document.createElement('label');
+      label.className = 'checkbox-option checkbox-option--compact';
+      label.setAttribute('for', itemId);
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.id = itemId;
+      input.name = `${id}[]`;
+      input.value = option.value;
+      input.dataset.structuredField = id;
+
+      const copy = document.createElement('span');
+      copy.className = 'checkbox-option__copy checkbox-option__copy--centered';
+
+      const title = document.createElement('span');
+      title.className = 'checkbox-option__label';
+      title.textContent = option.value;
+
+      const definition = document.createElement('span');
+      definition.className = 'checkbox-option__definition';
+      definition.textContent = option.definition;
+
+      copy.append(title, definition);
+      label.append(input, copy);
+      container.appendChild(label);
+    });
+  }
+
+  function renderStructuredFields() {
+    Object.entries(STRUCTURED_FIELDS).forEach(([id, config]) => {
+      if (config.type === 'select') {
+        renderStructuredSelect(id, config);
+      }
+      if (config.type === 'checkbox') {
+        renderStructuredCheckboxes(id, config);
+      }
+    });
+  }
+
+  function getSelectDefinition(id) {
+    const config = getStructuredConfig(id);
+    const value = getOptionalValue(id);
+    if (!config || !value) return config?.defaultNote || '';
+    const option = config.options.find((item) => item.value === value);
+    return option?.definition || config.defaultNote || '';
+  }
+
+  function setConditionalVisibility(id, visible) {
+    const config = getStructuredConfig(id);
+    const wrap = config ? getField(config.otherWrapId) : null;
+    if (!wrap) return;
+    wrap.hidden = !visible;
+  }
+
+  function updateStructuredFieldState(id) {
+    const config = getStructuredConfig(id);
+    if (!config) return;
+
+    if (config.type === 'select') {
+      const value = getOptionalValue(id);
+      const note = config.noteId ? getField(config.noteId) : null;
+      const field = getField(id);
+      const showingOther = value === 'Other';
+      setConditionalVisibility(id, showingOther);
+      if (!showingOther) {
+        const otherField = getField(config.otherFieldId);
+        if (otherField) otherField.value = '';
+      }
+      if (note) {
+        note.textContent = value ? getSelectDefinition(id) : config.defaultNote || '';
+      }
+      if (field) {
+        field.title = value ? getSelectDefinition(id) : config.defaultNote || '';
+      }
+    }
+
+    if (config.type === 'checkbox') {
+      const values = getStructuredValues(id);
+      const showingOther = values.some((value) => value === 'Other');
+      setConditionalVisibility(id, showingOther);
+      if (!showingOther) {
+        const otherField = getField(config.otherFieldId);
+        if (otherField) otherField.value = '';
+      }
+    }
+  }
+
+  function updateAllStructuredFieldStates() {
+    Object.keys(STRUCTURED_FIELDS).forEach(updateStructuredFieldState);
+  }
+
+  function getStructuredValues(id) {
+    const config = getStructuredConfig(id);
+    if (!config) return [];
+
+    if (config.type === 'select') {
+      const rawValue = getOptionalValue(id);
+      if (!rawValue) return [];
+      return [rawValue];
+    }
+
+    if (config.type === 'checkbox') {
+      return Array.from(form.querySelectorAll(`input[name="${id}[]"]:checked`)).map((input) => input.value);
+    }
+
+    return [];
+  }
+
+  function getFieldValue(id, fallback = '') {
+    const config = getStructuredConfig(id);
+
+    if (!config) {
+      return getTextValue(id, fallback);
+    }
+
+    if (config.type === 'select') {
+      const selected = getOptionalValue(id);
+      if (!selected) return fallback;
+      if (selected !== 'Other') return selected;
+      const otherText = getOptionalValue(config.otherFieldId);
+      return otherText || 'Other';
+    }
+
+    if (config.type === 'checkbox') {
+      const selected = getStructuredValues(id);
+      const hasOther = selected.includes('Other');
+      const otherText = getOptionalValue(config.otherFieldId);
+      const values = selected
+        .filter((value) => value !== 'Other')
+        .concat(hasOther && otherText ? [otherText] : hasOther ? ['Other'] : []);
+
+      if (values.length > 0) return values;
+      return Array.isArray(fallback) ? fallback : toLines(fallback);
+    }
+
+    return fallback;
+  }
+
+  function isFieldComplete(id) {
+    const config = getStructuredConfig(id);
+
+    if (!config) {
+      return Boolean(getOptionalValue(id));
+    }
+
+    if (config.type === 'select') {
+      const selected = getOptionalValue(id);
+      if (!selected) return false;
+      if (selected !== 'Other') return true;
+      return Boolean(getOptionalValue(config.otherFieldId));
+    }
+
+    if (config.type === 'checkbox') {
+      const selected = getStructuredValues(id);
+      if (selected.length === 0) return false;
+      if (!selected.includes('Other')) return true;
+      return Boolean(getOptionalValue(config.otherFieldId)) || selected.some((value) => value !== 'Other');
+    }
+
+    return false;
+  }
+
+  function setFieldValue(id, value) {
+    const config = getStructuredConfig(id);
+
+    if (!config) {
+      setTextValue(id, value);
+      return;
+    }
+
+    if (config.type === 'select') {
+      const select = getField(id);
+      const otherField = getField(config.otherFieldId);
+      const optionValues = new Set(config.options.map((option) => option.value));
+      const normalizedValue = String(value || '').trim();
+
+      if (!select) return;
+      if (!normalizedValue) {
+        select.value = '';
+        if (otherField) otherField.value = '';
+        updateStructuredFieldState(id);
+        return;
+      }
+
+      if (optionValues.has(normalizedValue)) {
+        select.value = normalizedValue;
+        if (otherField) otherField.value = '';
+      } else if (optionValues.has('Other')) {
+        select.value = 'Other';
+        if (otherField) otherField.value = normalizedValue;
+      }
+
+      updateStructuredFieldState(id);
+      return;
+    }
+
+    if (config.type === 'checkbox') {
+      const values = Array.isArray(value) ? value : toLines(value);
+      const optionValues = new Set(config.options.map((option) => option.value));
+      const otherField = getField(config.otherFieldId);
+      const checkboxes = Array.from(form.querySelectorAll(`input[name="${id}[]"]`));
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+
+      const extras = [];
+      values.forEach((item) => {
+        const normalized = String(item || '').trim();
+        if (!normalized) return;
+        const match = checkboxes.find((checkbox) => checkbox.value === normalized);
+        if (match) {
+          match.checked = true;
+        } else if (optionValues.has('Other')) {
+          const otherCheckbox = checkboxes.find((checkbox) => checkbox.value === 'Other');
+          if (otherCheckbox) otherCheckbox.checked = true;
+          extras.push(normalized);
+        }
+      });
+
+      if (otherField) {
+        otherField.value = extras.join(', ');
+      }
+
+      updateStructuredFieldState(id);
+    }
+  }
+
+  function serializeFormState() {
+    const formData = new FormData(form);
+    const fields = Array.from(formData.entries())
+      .map(([key, value]) => [key, String(value)])
+      .sort(([a], [b]) => a.localeCompare(b));
+
+    return JSON.stringify({
+      fields,
+      members: getMemberRows()
+    });
+  }
+
+  function hasFormChanges() {
+    return serializeFormState() !== initialFormSnapshot;
+  }
+
+  function createMemberField(config, value = '') {
+    if (config.type === 'select') {
+      const select = document.createElement('select');
+      select.className = 'members-input members-select';
+      select.setAttribute('aria-label', config.label);
+      select.dataset.memberKey = config.key;
+      select.appendChild(new Option(config.placeholder, ''));
+      config.options.forEach((option) => {
+        select.appendChild(new Option(option, option));
+      });
+      select.value = value || '';
+      select.addEventListener('change', updateHelpers);
+      return select;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'members-input';
+    input.placeholder = config.placeholder;
+    input.value = value || '';
+    input.setAttribute('aria-label', config.label);
+    input.dataset.memberKey = config.key;
+    input.addEventListener('input', updateHelpers);
+    return input;
+  }
+
+  function createMemberRow(data = {}) {
+    const tr = document.createElement('tr');
+    tr.className = 'members-row';
+
+    const fields = [
+      { key: 'name', label: 'Name', placeholder: 'e.g., Jane Doe', type: 'text' },
+      { key: 'title', label: 'Title', placeholder: 'e.g., Chief Data Officer', type: 'text' },
+      {
+        key: 'role',
+        label: 'Role',
+        placeholder: 'Select role',
+        type: 'select',
+        options: MEMBER_ROLE_OPTIONS
+      },
+      {
+        key: 'voting',
+        label: 'Voting Status',
+        placeholder: 'Select voting status',
+        type: 'select',
+        options: MEMBER_VOTING_OPTIONS
+      }
+    ];
+
+    fields.forEach((config) => {
+      const td = document.createElement('td');
+      td.appendChild(createMemberField(config, data[config.key] || ''));
+      tr.appendChild(td);
+    });
+
+    const tdDelete = document.createElement('td');
+    tdDelete.className = 'members-cell--delete';
+
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'members-delete-btn';
+    deleteButton.setAttribute('aria-label', 'Remove this member');
+    deleteButton.title = 'Remove row';
+    deleteButton.innerHTML = '&times;';
+    deleteButton.addEventListener('click', () => {
+      tr.remove();
+      if (!membersTbody?.querySelector('tr.members-row')) {
+        initMembersTable();
+      }
+      updateHelpers();
+    });
+
+    tdDelete.appendChild(deleteButton);
+    tr.appendChild(tdDelete);
+
+    return tr;
+  }
+
+  function initMembersTable() {
+    if (!membersTbody) return;
     membersTbody.innerHTML = '';
     membersTbody.appendChild(createMemberRow());
   }
 
-  [
-    ['committee-type', 'committee-type-other'],
-    ['agency-scope', 'agency-scope-other'],
-    ['decision-authority', 'decision-authority-other'],
-    ['meeting-frequency', 'meeting-frequency-other'],
-    ['quorum', 'quorum-other'],
-    ['decision-making', 'decision-making-other']
-  ].forEach(([selectId, otherId]) => toggleOtherInput(selectId, otherId));
-
-  handleRequiredFunctionsOther();
-  document.getElementById('role-definitions').value = DEFAULT_ROLE_DEFINITION_LINES.join('\n');
-  updateDownloadNameFromCharterName();
-  updateProgress();
-}
-
-function sanitizeDownloadName() {
-  if (!downloadNameInput) return 'Data_Governance_Steering_Committee_Charter.docx';
-  let value = downloadNameInput.value.trim() || 'Data_Governance_Steering_Committee_Charter.docx';
-  if (!value.toLowerCase().endsWith('.docx')) {
-    value = `${value}.docx`;
+  function clearMembersTable() {
+    initMembersTable();
   }
-  return value;
-}
 
-function getTextValue(id) {
-  return document.getElementById(id)?.value?.trim() || '';
-}
+  function populateMembersTable(members) {
+    if (!membersTbody) return;
+    membersTbody.innerHTML = '';
+    members.forEach((member) => {
+      membersTbody.appendChild(
+        createMemberRow({
+          ...member,
+          role: MEMBER_ROLE_OPTIONS.includes(member?.role) ? member.role : '',
+          voting: MEMBER_VOTING_OPTIONS.includes(member?.voting) ? member.voting : ''
+        })
+      );
+    });
+  }
 
-function getSelectValue(id, otherId) {
-  const baseValue = getTextValue(id);
-  if (baseValue !== 'Other') return baseValue;
-  return getTextValue(otherId);
-}
+  function getMemberRows() {
+    if (!membersTbody) return [];
 
-function memberRowsData() {
-  if (!membersTbody) return [];
-  return Array.from(membersTbody.querySelectorAll('tr'))
-    .map((row) => {
-      const inputs = row.querySelectorAll('input, select');
+    return Array.from(membersTbody.querySelectorAll('tr.members-row')).map((row) => {
+      const fields = Array.from(row.querySelectorAll('[data-member-key]'));
+      const values = Object.fromEntries(
+        fields.map((field) => [field.dataset.memberKey, typeof field.value === 'string' ? field.value.trim() : ''])
+      );
+
       return {
-        name: inputs[0]?.value?.trim() || '',
-        title: inputs[1]?.value?.trim() || '',
-        role: inputs[2]?.value?.trim() || '',
-        voting: inputs[3]?.value?.trim() || ''
+        name: values.name || '',
+        title: values.title || '',
+        role: values.role || '',
+        voting: values.voting || ''
       };
-    })
-    .filter((row) => Object.values(row).some(Boolean));
-}
-
-function appendSectionHeading(docxApi, children, text) {
-  if (!text) return;
-  children.push(
-    new docxApi.Paragraph({
-      text,
-      heading: docxApi.HeadingLevel.HEADING_1,
-      spacing: { before: 260, after: 120 }
-    })
-  );
-}
-
-function appendSubHeading(docxApi, children, text) {
-  if (!text) return;
-  children.push(
-    new docxApi.Paragraph({
-      text,
-      heading: docxApi.HeadingLevel.HEADING_2,
-      spacing: { before: 180, after: 60 }
-    })
-  );
-}
-
-function appendParagraph(docxApi, children, text) {
-  if (!text) return;
-  children.push(
-    new docxApi.Paragraph({
-      text,
-      spacing: { after: 120 }
-    })
-  );
-}
-
-function appendBullets(docxApi, children, lines) {
-  lines.forEach((line) => {
-    children.push(
-      new docxApi.Paragraph({
-        text: line,
-        bullet: { level: 0 },
-        spacing: { after: 40 }
-      })
-    );
-  });
-}
-
-async function generateDocx(event) {
-  event.preventDefault();
-
-  const docxApi = window.docx;
-  if (!docxApi?.Document || !docxApi?.Packer) {
-    alert('The Word export library did not load. Refresh the page and try again.');
-    return;
+    });
   }
 
-  submitButton.disabled = true;
-  submitButton.textContent = 'Generating document…';
+  function isMeaningfulMemberRow(row) {
+    return Boolean(row?.name || row?.title || row?.role || row?.voting);
+  }
 
-  try {
-    const children = [];
-    const charterName = getTextValue('charter-name') || 'Data Governance Charter';
-    const committeeType = getSelectValue('committee-type', 'committee-type-other');
-    const organizationalScope = getSelectValue('agency-scope', 'agency-scope-other');
+  function hasMemberData() {
+    return getMemberRows().some((row) => isMeaningfulMemberRow(row));
+  }
 
-    children.push(
-      new docxApi.Paragraph({
-        text: charterName,
-        heading: docxApi.HeadingLevel.TITLE,
-        spacing: { after: 220 }
-      })
-    );
+  function updateFilenamePreview() {
+    if (!filenamePreview) return;
+    const charterName = getTextValue('charter-name', DEFAULTS['charter-name']);
+    filenamePreview.textContent = `${safeFileName(charterName)}_Charter.docx`;
+  }
 
-    appendParagraph(docxApi, children, `Agency / Department: ${getTextValue('agency-name')}`);
-    appendParagraph(docxApi, children, committeeType ? `Committee Type: ${committeeType}` : '');
-    appendParagraph(docxApi, children, organizationalScope ? `Organizational Scope: ${organizationalScope}` : '');
-    appendParagraph(docxApi, children, getTextValue('executive-sponsor') ? `Executive Sponsor: ${getTextValue('executive-sponsor')}` : '');
-    appendParagraph(docxApi, children, getTextValue('chair-lead') ? `Chair / Lead: ${getTextValue('chair-lead')}` : '');
-    appendParagraph(docxApi, children, getTextValue('effective-date') ? `Effective Date: ${getTextValue('effective-date')}` : '');
-    appendParagraph(docxApi, children, getTextValue('term-review-cycle') ? `Term & Review Cycle: ${getTextValue('term-review-cycle')}` : '');
+  function updateCompletion() {
+    if (!completionText || !completionBar) return;
 
-    appendSectionHeading(docxApi, children, 'Purpose, Vision, Mission & Outcomes');
-    appendSubHeading(docxApi, children, 'Purpose');
-    appendParagraph(docxApi, children, getTextValue('purpose'));
-    appendSubHeading(docxApi, children, 'Vision');
-    appendParagraph(docxApi, children, getTextValue('vision'));
-    appendSubHeading(docxApi, children, 'Mission');
-    appendParagraph(docxApi, children, getTextValue('mission'));
-    appendSubHeading(docxApi, children, 'Objectives');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('objectives')));
-    appendSubHeading(docxApi, children, 'Success Metrics');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('success-metrics')));
+    const coreCompleted = PROGRESS_FIELD_IDS.filter((id) => isFieldComplete(id)).length;
+    const membersCompleted = hasMemberData() ? 1 : 0;
+    const total = PROGRESS_FIELD_IDS.length + 1;
+    const completed = coreCompleted + membersCompleted;
+    const percent = Math.round((completed / total) * 100);
 
-    appendSectionHeading(docxApi, children, 'Scope & Authority');
-    appendSubHeading(docxApi, children, 'In-Scope Activities');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('in-scope')));
-    appendSubHeading(docxApi, children, 'Out-of-Scope Activities');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('out-of-scope')));
-    appendSubHeading(docxApi, children, 'Decision Authority');
-    appendParagraph(docxApi, children, getSelectValue('decision-authority', 'decision-authority-other'));
-    appendSubHeading(docxApi, children, 'Escalation Path');
-    appendParagraph(docxApi, children, getTextValue('escalation-path'));
+    completionBar.style.width = `${percent}%`;
 
-    appendSectionHeading(docxApi, children, 'Guiding Principles');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('guiding-principles-input')));
-
-    appendSectionHeading(docxApi, children, 'Membership & Roles');
-    const members = memberRowsData();
-    if (members.length) {
-      members.forEach((member) => {
-        appendParagraph(docxApi, children, `${member.name || 'Member'} | ${member.title || ''} | ${member.role || ''} | ${member.voting || ''}`.replace(/\s+\|\s+\|\s+/g, ' | '));
-      });
+    if (percent < 35) {
+      completionText.textContent = 'Start with the charter basics and purpose sections.';
+    } else if (percent < 70) {
+      completionText.textContent = 'The draft is taking shape. Add membership, responsibilities, and operating details next.';
+    } else if (percent < 100) {
+      completionText.textContent = 'Nearly complete. Review advanced sections and export when ready.';
     } else {
-      appendParagraph(docxApi, children, 'No members listed.');
+      completionText.textContent = 'Core sections are complete. You are ready to generate the charter.';
+    }
+  }
+
+  function updateHelpers() {
+    updateFilenamePreview();
+    updateCompletion();
+  }
+
+  function fillStarterContent() {
+    Object.entries(DEFAULTS).forEach(([id, value]) => {
+      if (!isFieldComplete(id)) {
+        setFieldValue(id, value);
+      }
+    });
+
+    if (!hasMemberData()) {
+      populateMembersTable(DEFAULT_MEMBERS);
     }
 
-    appendSubHeading(docxApi, children, 'Required Functions / Perspectives');
-    appendBullets(docxApi, children, getSelectedRequiredFunctions());
+    syncRoleDefinitionsFromRequiredFunctions();
+    updateAllStructuredFieldStates();
+    updateHelpers();
+    setStatus('Starter content loaded. Review and customize before export.', 'success');
+  }
 
-    appendSubHeading(docxApi, children, 'Role Definitions');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('role-definitions')));
+  // DOCX helper factories keep document construction readable and reusable.
+  function blankParagraph(after = 120) {
+    return new docx.Paragraph({ text: '', spacing: { after } });
+  }
 
-    appendSectionHeading(docxApi, children, 'Responsibilities & Deliverables');
-    appendSubHeading(docxApi, children, 'Committee Responsibilities');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('responsibilities-input')));
-    appendSubHeading(docxApi, children, 'Annual or Initial Priorities');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('priorities')));
-    appendSubHeading(docxApi, children, 'Key Deliverables');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('deliverables')));
+  function heading(text, level, color = '1F2933') {
+    return new docx.Paragraph({
+      heading: level,
+      spacing: { before: 220, after: 80 },
+      children: [new docx.TextRun({ text, bold: true, color })]
+    });
+  }
 
-    appendSectionHeading(docxApi, children, 'Operating Model');
-    appendParagraph(docxApi, children, getSelectValue('meeting-frequency', 'meeting-frequency-other') ? `Meeting Frequency: ${getSelectValue('meeting-frequency', 'meeting-frequency-other')}` : '');
-    appendParagraph(docxApi, children, getSelectValue('quorum', 'quorum-other') ? `Quorum: ${getSelectValue('quorum', 'quorum-other')}` : '');
-    appendParagraph(docxApi, children, getSelectValue('decision-making', 'decision-making-other') ? `Decision-Making Process: ${getSelectValue('decision-making', 'decision-making-other')}` : '');
-    appendParagraph(docxApi, children, getTextValue('meeting-administration') ? `Meeting Administration: ${getTextValue('meeting-administration')}` : '');
+  function bodyParagraph(text) {
+    return new docx.Paragraph({
+      children: [new docx.TextRun({ text: String(text || '') })],
+      spacing: { after: 120 }
+    });
+  }
 
-    appendSectionHeading(docxApi, children, 'Advanced Sections');
-    appendSubHeading(docxApi, children, 'Policy / Legal / Regulatory Alignment');
-    appendParagraph(docxApi, children, getTextValue('policy-alignment'));
-    appendSubHeading(docxApi, children, 'Privacy, Security & Data Release Considerations');
-    appendParagraph(docxApi, children, getTextValue('privacy-security'));
-    appendSubHeading(docxApi, children, 'Data Sharing & Access Considerations');
-    appendParagraph(docxApi, children, getTextValue('data-sharing'));
-    appendSubHeading(docxApi, children, 'Standing Working Groups / Subcommittees');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('working-groups')));
-    appendSubHeading(docxApi, children, 'Version History');
-    appendBullets(docxApi, children, linesFromValue(getTextValue('version-history')));
+  function multiParagraphs(text) {
+    return toLines(text).map((line) => bodyParagraph(line));
+  }
 
-    const document = new docxApi.Document({
-      creator: 'Data Governance Charter Generator',
-      description: 'Generated charter draft',
-      sections: [
-        {
-          properties: {},
-          children
-        }
+  function bulletList(items) {
+    const lines = Array.isArray(items) ? items.filter(Boolean) : toLines(items);
+    return lines.map(
+      (item) => new docx.Paragraph({ text: item, bullet: { level: 0 }, spacing: { after: 80 } })
+    );
+  }
+
+  function tableCell(text, options = {}) {
+    return new docx.TableCell({
+      shading: options.shading ? { fill: options.shading } : undefined,
+      verticalAlign: docx.VerticalAlign.CENTER,
+      children: [
+        new docx.Paragraph({
+          spacing: { before: 60, after: 60 },
+          children: [
+            new docx.TextRun({
+              text: String(text || ''),
+              bold: Boolean(options.bold),
+              color: options.color || '1F2933'
+            })
+          ]
+        })
       ]
     });
-
-    const blob = await docxApi.Packer.toBlob(document);
-    const downloadLink = document.createElement('a');
-    downloadLink.href = URL.createObjectURL(blob);
-    downloadLink.download = sanitizeDownloadName();
-    downloadLink.click();
-    setTimeout(() => URL.revokeObjectURL(downloadLink.href), 1000);
-  } catch (error) {
-    console.error(error);
-    alert('Something went wrong while generating the document.');
-  } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = submitLabel;
   }
-}
 
-function handleJumpTopVisibility() {
-  if (!jumpTopButton) return;
-  jumpTopButton.classList.toggle('is-visible', window.scrollY > 520);
-}
+  function getTableBorders() {
+    return {
+      top: { style: docx.BorderStyle.SINGLE, size: 1, color: 'C8B9A6' },
+      bottom: { style: docx.BorderStyle.SINGLE, size: 1, color: 'C8B9A6' },
+      left: { style: docx.BorderStyle.SINGLE, size: 1, color: 'C8B9A6' },
+      right: { style: docx.BorderStyle.SINGLE, size: 1, color: 'C8B9A6' },
+      insideHorizontal: { style: docx.BorderStyle.SINGLE, size: 1, color: 'E8DDD0' },
+      insideVertical: { style: docx.BorderStyle.SINGLE, size: 1, color: 'E8DDD0' }
+    };
+  }
 
-function init() {
-  if (!form) return;
-
-  membersTbody?.appendChild(createMemberRow());
-  document.getElementById('role-definitions').value = DEFAULT_ROLE_DEFINITION_LINES.join('\n');
-
-  [
-    ['committee-type', 'committee-type-other'],
-    ['agency-scope', 'agency-scope-other'],
-    ['decision-authority', 'decision-authority-other'],
-    ['meeting-frequency', 'meeting-frequency-other'],
-    ['quorum', 'quorum-other'],
-    ['decision-making', 'decision-making-other']
-  ].forEach(([selectId, otherId]) => {
-    const select = document.getElementById(selectId);
-    select?.addEventListener('change', () => {
-      toggleOtherInput(selectId, otherId);
-      updateProgress();
+  function createKeyValueTable(rows) {
+    return new docx.Table({
+      width: { size: 100, type: docx.WidthType.PERCENTAGE },
+      layout: docx.TableLayoutType.FIXED,
+      borders: getTableBorders(),
+      rows: rows.map(
+        ([label, value]) =>
+          new docx.TableRow({
+            children: [
+              new docx.TableCell({
+                width: { size: 28, type: docx.WidthType.PERCENTAGE },
+                shading: { fill: 'F7F3EC' },
+                verticalAlign: docx.VerticalAlign.CENTER,
+                children: [
+                  new docx.Paragraph({
+                    spacing: { before: 80, after: 80 },
+                    children: [new docx.TextRun({ text: label, bold: true, color: '1F2933' })]
+                  })
+                ]
+              }),
+              new docx.TableCell({
+                width: { size: 72, type: docx.WidthType.PERCENTAGE },
+                verticalAlign: docx.VerticalAlign.CENTER,
+                children: [
+                  new docx.Paragraph({
+                    spacing: { before: 80, after: 80 },
+                    children: [new docx.TextRun({ text: String(value || '') })]
+                  })
+                ]
+              })
+            ]
+          })
+      )
     });
-  });
+  }
 
-  document.getElementById('required-functions-other-check')?.addEventListener('change', () => {
-    handleRequiredFunctionsOther();
-    buildRoleDefinitionsFromFunctions();
-    updateProgress();
-  });
+  function createDataTable(headers, linesText, expectedParts, fallbackText, headerFill, headerTextColor) {
+    const lines = toLines(linesText || fallbackText);
+    const rows = lines.map((line) => splitWithLimit(line, expectedParts));
 
-  document.querySelectorAll('#required-functions input[type="checkbox"]').forEach((checkbox) => {
-    checkbox.addEventListener('change', () => {
-      if (checkbox.value !== 'Other') buildRoleDefinitionsFromFunctions();
-      updateProgress();
+    return new docx.Table({
+      width: { size: 100, type: docx.WidthType.PERCENTAGE },
+      layout: docx.TableLayoutType.FIXED,
+      borders: getTableBorders(),
+      rows: [
+        new docx.TableRow({
+          tableHeader: true,
+          children: headers.map((header) =>
+            tableCell(header, { bold: true, shading: headerFill, color: headerTextColor })
+          )
+        }),
+        ...rows.map(
+          (row, index) =>
+            new docx.TableRow({
+              children: row.map((value) =>
+                tableCell(value, { shading: index % 2 === 0 ? 'FFFFFF' : 'FBF8F2' })
+              )
+            })
+        )
+      ]
     });
+  }
+
+  function createMembersDocTable(members) {
+    const rows = members.length > 0 ? members : [{ name: '', title: '', role: '', voting: '' }];
+
+    return new docx.Table({
+      width: { size: 100, type: docx.WidthType.PERCENTAGE },
+      layout: docx.TableLayoutType.FIXED,
+      borders: getTableBorders(),
+      rows: [
+        new docx.TableRow({
+          tableHeader: true,
+          children: MEMBER_COLUMNS.map((column) =>
+            tableCell(column, { bold: true, shading: '2F5D50', color: 'FFFFFF' })
+          )
+        }),
+        ...rows.map((member, index) =>
+          new docx.TableRow({
+            children: [member.name, member.title, member.role, member.voting].map((value) =>
+              tableCell(value, { shading: index % 2 === 0 ? 'FFFFFF' : 'FBF8F2' })
+            )
+          })
+        )
+      ]
+    });
+  }
+
+  function createSection(title, color, buildContent) {
+    const content = buildContent();
+    if (!Array.isArray(content) || content.length === 0) return [];
+    return [heading(title, docx.HeadingLevel.HEADING_1, color), ...content, blankParagraph()];
+  }
+
+  function buildDocument() {
+    const charterName = getTextValue('charter-name', DEFAULTS['charter-name']);
+    const agencyName = getTextValue('agency-name', DEFAULTS['agency-name']);
+    const committeeType = getFieldValue('committee-type', DEFAULTS['committee-type']);
+    const agencyScope = getFieldValue('agency-scope', DEFAULTS['agency-scope']);
+    const executiveSponsor = getTextValue('executive-sponsor', DEFAULTS['executive-sponsor']);
+    const chairLead = getTextValue('chair-lead', DEFAULTS['chair-lead']);
+    const effectiveDate = formatDate(getTextValue('effective-date', DEFAULTS['effective-date']));
+    const termReview = getTextValue('term-review', DEFAULTS['term-review']);
+    const decisionAuthority = getFieldValue('decision-authority', DEFAULTS['decision-authority']);
+    const requiredFunctions = getFieldValue('required-functions', DEFAULTS['required-functions']);
+    const meetingFrequency = getFieldValue('meeting-frequency', DEFAULTS['meeting-frequency']);
+    const decisionMaking = getFieldValue('decision-making', DEFAULTS['decision-making']);
+
+    const metadataTable = createKeyValueTable([
+      ['Agency / Department', agencyName],
+      ['Charter Name', charterName],
+      ['Committee Type', committeeType],
+      ['Organizational Scope', agencyScope],
+      ['Executive Sponsor', executiveSponsor],
+      ['Chair / Lead', chairLead],
+      ['Effective Date', effectiveDate],
+      ['Term & Review Cycle', termReview]
+    ]);
+
+    const memberRows = getMemberRows().filter((row) => isMeaningfulMemberRow(row));
+    const votingMembers = memberRows.filter((row) => row.voting === 'Voting');
+    const nonVotingMembers = memberRows.filter((row) => row.voting === 'Non-Voting');
+
+    const versionHistoryTable = createDataTable(
+      ['Version', 'Date', 'Author', 'Summary of Changes'],
+      getOptionalValue('version-history') || DEFAULTS['version-history'],
+      4,
+      DEFAULTS['version-history'],
+      '5A2D5C',
+      'FFFFFF'
+    );
+
+    const children = [
+      new docx.Paragraph({
+        alignment: docx.AlignmentType.CENTER,
+        spacing: { after: 80 },
+        children: [new docx.TextRun({ text: charterName, bold: true, size: 34, color: '1F2933' })]
+      }),
+      new docx.Paragraph({
+        alignment: docx.AlignmentType.CENTER,
+        spacing: { after: 220 },
+        children: [new docx.TextRun({ text: agencyName, size: 24, color: '5A6470' })]
+      }),
+      metadataTable,
+      blankParagraph(60),
+
+      ...createSection('1. Purpose', 'A54A2A', () => multiParagraphs(getTextValue('purpose', DEFAULTS.purpose))),
+      ...createSection('2. Vision & Mission', 'A54A2A', () => [
+        heading('Vision', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        ...multiParagraphs(getTextValue('vision', DEFAULTS.vision)),
+        heading('Mission', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        ...multiParagraphs(getTextValue('mission', DEFAULTS.mission))
+      ]),
+      ...createSection('3. Objectives', 'A54A2A', () => bulletList(getTextValue('objectives', DEFAULTS.objectives))),
+      ...createSection('4. Success Metrics', 'A54A2A', () =>
+        bulletList(getTextValue('success-metrics', DEFAULTS['success-metrics']))
+      ),
+
+      ...createSection('5. Scope & Authority', 'A54A2A', () => [
+        heading('In Scope', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        ...bulletList(getTextValue('in-scope', DEFAULTS['in-scope'])),
+        heading('Out of Scope', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        ...bulletList(getTextValue('out-of-scope', DEFAULTS['out-of-scope'])),
+        heading('Decision Authority', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        bodyParagraph(decisionAuthority),
+        heading('Escalation Path', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        ...multiParagraphs(getTextValue('escalation-path', DEFAULTS['escalation-path']))
+      ]),
+
+      ...createSection('6. Guiding Principles', '2F5D50', () =>
+        bulletList(getTextValue('guiding-principles', DEFAULTS['guiding-principles']))
+      ),
+
+      ...createSection('7. Membership & Representation', '2F5D50', () => [
+        heading('Committee Members - Voting', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        createMembersDocTable(votingMembers),
+        heading('Committee Members - Non-Voting', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        createMembersDocTable(nonVotingMembers),
+        heading('Required Functions / Perspectives', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        ...bulletList(requiredFunctions),
+        heading('Role Definitions', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        ...bulletList(getTextValue('role-definitions', DEFAULTS['role-definitions']))
+      ]),
+
+      ...createSection('8. Responsibilities & Deliverables', '2F5D50', () => [
+        heading('Committee Responsibilities', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        ...bulletList(getTextValue('responsibilities', DEFAULTS.responsibilities)),
+        heading('Annual or Initial Priorities', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        ...bulletList(getTextValue('annual-priorities', DEFAULTS['annual-priorities'])),
+        heading('Key Deliverables', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        ...bulletList(getTextValue('key-deliverables', DEFAULTS['key-deliverables']))
+      ]),
+
+      ...createSection('9. Operating Model', '5A2D5C', () => {
+        const operatingModelTable = createKeyValueTable([
+          ['Meeting Frequency', meetingFrequency],
+          ['Quorum', getFieldValue('quorum', DEFAULTS.quorum)],
+          ['Decision-Making Process', decisionMaking]
+        ]);
+
+        return [
+          operatingModelTable,
+          heading('Meeting Administration', docx.HeadingLevel.HEADING_2, '5A2D5C'),
+          ...multiParagraphs(getTextValue('meeting-administration', DEFAULTS['meeting-administration']))
+        ];
+      }),
+
+      ...createSection('10. Policy, Privacy, Security & Sharing', '5A2D5C', () => {
+        const content = [];
+        const policyAlignment = getOptionalValue('policy-alignment');
+        const privacySecurity = getOptionalValue('privacy-security-considerations');
+        const dataSharing = getOptionalValue('data-sharing');
+
+        if (policyAlignment) {
+          content.push(heading('Policy / Legal / Regulatory Alignment', docx.HeadingLevel.HEADING_2, '5A2D5C'));
+          content.push(...multiParagraphs(policyAlignment));
+        }
+
+        if (privacySecurity) {
+          content.push(
+            heading('Privacy, Security & Data Release Considerations', docx.HeadingLevel.HEADING_2, '5A2D5C')
+          );
+          content.push(...multiParagraphs(privacySecurity));
+        }
+
+        if (dataSharing) {
+          content.push(heading('Data Sharing & Access Considerations', docx.HeadingLevel.HEADING_2, '5A2D5C'));
+          content.push(...multiParagraphs(dataSharing));
+        }
+
+        return content;
+      }),
+
+      ...createSection('11. Working Groups & Subcommittees', '5A2D5C', () => {
+        const subcommittees = getOptionalValue('subcommittees');
+        return subcommittees ? bulletList(subcommittees) : [];
+      }),
+
+      ...createSection('12. Version History', '5A2D5C', () => [versionHistoryTable])
+    ];
+
+    return new docx.Document({
+      creator: 'Data Governance Charter Generator',
+      title: charterName,
+      description: 'Generated charter document for a data governance committee.',
+      sections: [{ children }]
+    });
+  }
+
+  form.addEventListener('input', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    if (target.id && REQUIRED_FIELD_IDS.includes(target.id)) {
+      setAriaInvalid(target.id, !getOptionalValue(target.id));
+    }
+
+    if (target.id) {
+      Object.entries(STRUCTURED_FIELDS).forEach(([id, config]) => {
+        if (target.id === id || target.id === config.otherFieldId) {
+          updateStructuredFieldState(id);
+        }
+      });
+    }
+
+    updateHelpers();
   });
 
-  addMemberBtn?.addEventListener('click', () => {
-    membersTbody?.appendChild(createMemberRow());
+  form.addEventListener('change', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    if (target.id && getStructuredConfig(target.id)) {
+      updateStructuredFieldState(target.id);
+    }
+
+    const structuredFieldId = target.dataset?.structuredField;
+    if (structuredFieldId) {
+      updateStructuredFieldState(structuredFieldId);
+      if (structuredFieldId === 'required-functions') {
+        syncRoleDefinitionsFromRequiredFunctions();
+      }
+    }
+
+    updateHelpers();
   });
 
-  fillButton?.addEventListener('click', loadStarterContent);
-  resetButton?.addEventListener('click', resetFormToInitial);
-  sortRoleDefinitionsBtn?.addEventListener('click', () => {
-    const textarea = document.getElementById('role-definitions');
-    if (!textarea) return;
-    const sorted = linesFromValue(textarea.value).sort((a, b) => a.localeCompare(b));
-    textarea.value = sorted.join('\n');
+  form.addEventListener('reset', () => {
+    window.setTimeout(() => {
+      REQUIRED_FIELD_IDS.forEach((id) => setAriaInvalid(id, false));
+      setStatus('');
+      clearMembersTable();
+      setTextValue('role-definitions', DEFAULT_ROLE_DEFINITION_LINES.join('\n'));
+      updateAllStructuredFieldStates();
+      updateHelpers();
+    }, 0);
   });
 
-  document.getElementById('charter-name')?.addEventListener('input', updateDownloadNameFromCharterName);
-  downloadNameInput?.addEventListener('input', updateFilenamePreview);
+  if (fillButton) {
+    fillButton.addEventListener('click', fillStarterContent);
+  }
 
-  form.addEventListener('input', updateProgress);
-  form.addEventListener('change', updateProgress);
-  form.addEventListener('submit', generateDocx);
+  if (resetButton) {
+    resetButton.addEventListener('click', () => {
+      if (hasFormChanges()) {
+        const confirmed = window.confirm('Clear the form and remove any entered content?');
+        if (!confirmed) return;
+      }
+      form.reset();
+    });
+  }
 
-  jumpTopButton?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-  window.addEventListener('scroll', handleJumpTopVisibility, { passive: true });
-  handleJumpTopVisibility();
+  if (addMemberBtn) {
+    addMemberBtn.addEventListener('click', () => {
+      if (!membersTbody) return;
+      const row = createMemberRow();
+      membersTbody.appendChild(row);
+      row.querySelector('[data-member-key="name"]')?.focus();
+      updateHelpers();
+    });
+  }
 
-  updateDownloadNameFromCharterName();
-  updateProgress();
+  if (sortRoleDefinitionsBtn) {
+    sortRoleDefinitionsBtn.addEventListener('click', () => {
+      sortRoleDefinitions();
+    });
+  }
+
+  if (jumpTopButton) {
+    jumpTopButton.addEventListener('click', scrollToTop);
+  }
+
+  window.addEventListener('scroll', updateJumpTopVisibility, { passive: true });
+  window.addEventListener('resize', updateJumpTopVisibility);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const { isValid, firstInvalid } = validateForm();
+    if (!isValid) {
+      setStatus('Please complete the required charter basics before generating the document.', 'error');
+      firstInvalid?.focus();
+      return;
+    }
+
+    docx = resolveDocx();
+    if (!docx || typeof window.saveAs !== 'function') {
+      setStatus('Document libraries did not load. Refresh the page and try again.', 'error');
+      return;
+    }
+
+    try {
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Generating...';
+      }
+
+      setStatus('Generating your charter document...', 'success');
+      const documentDefinition = buildDocument();
+      const blob = await docx.Packer.toBlob(documentDefinition);
+      const fileName = `${safeFileName(getTextValue('charter-name', DEFAULTS['charter-name']))}_Charter.docx`;
+      window.saveAs(blob, fileName);
+      setStatus(`Done. Download started for ${fileName}.`, 'success');
+    } catch (error) {
+      console.error('Error generating charter:', error);
+      setStatus('There was an error generating the charter. Check the browser console for details.', 'error');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = submitLabel;
+      }
+    }
+  });
+
+  renderStructuredFields();
+  if (!getOptionalValue('role-definitions')) {
+    setTextValue('role-definitions', DEFAULT_ROLE_DEFINITION_LINES.join('\n'));
+  }
+  initMembersTable();
+  updateAllStructuredFieldStates();
   initialFormSnapshot = serializeFormState();
-}
-
-document.addEventListener('DOMContentLoaded', init);
+  updateHelpers();
+  updateJumpTopVisibility();
+});
