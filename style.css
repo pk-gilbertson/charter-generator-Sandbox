@@ -383,32 +383,23 @@ textarea {
 
 /* Section cards are color-coded by governance role. */
 .form-card {
-  position: relative;
-  padding: 1.5rem;
+  padding: 1.35rem 1.35rem 1.2rem;
 }
 
-.form-card::before {
-  content: "";
-  position: absolute;
-  inset: 1rem auto 1rem 0.75rem;
-  width: 0.34rem;
-  border-radius: 999px;
+.form-card--owner {
+  border-top: 5px solid rgba(165, 74, 42, 0.85);
 }
 
-.form-card--owner::before {
-  background: var(--owner-core);
+.form-card--steward {
+  border-top: 5px solid rgba(47, 93, 80, 0.85);
 }
 
-.form-card--steward::before {
-  background: var(--steward-core);
+.form-card--custodian {
+  border-top: 5px solid rgba(90, 45, 92, 0.85);
 }
 
-.form-card--custodian::before {
-  background: var(--custodian-core);
-}
-
-.form-card--support::before {
-  background: var(--sand);
+.form-card--support {
+  border-top: 5px solid rgba(31, 41, 51, 0.25);
 }
 
 .section-heading {
@@ -472,8 +463,9 @@ label {
   margin-bottom: var(--space-5);
   padding: 0.9rem 1rem;
   border: 1px solid rgba(200, 185, 166, 0.72);
+  border-left: 4px solid rgba(165, 74, 42, 0.72);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, rgba(247, 243, 236, 0.95) 0%, rgba(255, 255, 255, 1) 100%);
+  background: linear-gradient(180deg, rgba(237, 223, 213, 0.46) 0%, rgba(255, 255, 255, 1) 100%);
   color: rgba(31, 41, 51, 0.86);
   box-shadow: var(--shadow-soft);
 }
