@@ -635,7 +635,7 @@ textarea[aria-invalid="true"] {
 
 .checkbox-group {
   margin: 0;
-  padding: 0.85rem;
+  padding: 0.7rem;
   border: 1px solid rgba(200, 185, 166, 0.7);
   border-radius: var(--radius-md);
   background: linear-gradient(180deg, rgba(247, 243, 236, 0.72) 0%, rgba(255, 255, 255, 1) 100%);
@@ -692,21 +692,22 @@ textarea[aria-invalid="true"] {
 }
 
 #required-functions-options {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.35rem;
+  align-items: start;
 }
 
 #required-functions-options .checkbox-option {
-  grid-template-columns: 1rem minmax(0, 1fr);
-  min-height: 2rem;
-  padding: 0.55rem 0.7rem;
-  gap: 0.5rem;
+  grid-template-columns: 0.95rem minmax(0, 1fr);
+  min-height: 0;
+  padding: 0.45rem 0.6rem 0.45rem 0.5rem;
+  gap: 0.4rem;
   align-items: center;
 }
 
 #required-functions-options .checkbox-option__label {
-  font-size: 0.92rem;
-  line-height: 1.3;
+  font-size: 0.89rem;
+  line-height: 1.18;
 }
 
 #required-functions-options .checkbox-option__definition {
@@ -1066,38 +1067,40 @@ textarea[aria-invalid="true"] {
 
 /* Compact variant used by Required Functions / Perspectives to reduce vertical footprint. */
 .checkbox-list--compact {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.35rem;
 }
 
 .checkbox-list--compact .checkbox-option,
 .checkbox-option--compact {
-  grid-template-columns: 1rem minmax(0, 1fr);
+  grid-template-columns: 0.95rem minmax(0, 1fr);
   align-items: center;
-  min-height: 2rem;
-  padding: 0.55rem 0.7rem;
-  gap: 0.5rem;
+  min-height: 0;
+  padding: 0.45rem 0.6rem 0.45rem 0.5rem;
+  gap: 0.4rem;
 }
 
 .checkbox-list--compact .checkbox-option input,
 .checkbox-option--compact input {
-  width: 1rem;
-  height: 1rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  min-width: 0.95rem;
+  min-height: 0.95rem;
   margin: 0;
   align-self: center;
 }
 
 .checkbox-list--compact .checkbox-option__copy,
 .checkbox-option__copy--centered {
-  min-height: 100%;
+  min-height: 0;
   display: flex;
   align-items: center;
 }
 
 .checkbox-list--compact .checkbox-option__label,
 .checkbox-option--compact .checkbox-option__label {
-  font-size: 0.92rem;
-  line-height: 1.25;
+  font-size: 0.89rem;
+  line-height: 1.18;
 }
 
 .checkbox-list--compact .checkbox-option__definition {
