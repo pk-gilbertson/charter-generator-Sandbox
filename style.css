@@ -1072,7 +1072,7 @@ textarea[aria-invalid="true"] {
 .checkbox-list--compact .checkbox-option,
 .checkbox-option--compact {
   align-items: center;
-  min-height: 4.25rem;
+  min-height: 2.25rem;
   padding: 0.7rem 0.85rem;
   gap: 0.7rem;
 }
