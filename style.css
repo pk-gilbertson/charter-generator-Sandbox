@@ -635,7 +635,7 @@ textarea[aria-invalid="true"] {
 
 .checkbox-group {
   margin: 0;
-  padding: 0.85rem;
+  padding: 1rem;
   border: 1px solid rgba(200, 185, 166, 0.7);
   border-radius: var(--radius-md);
   background: linear-gradient(180deg, rgba(247, 243, 236, 0.72) 0%, rgba(255, 255, 255, 1) 100%);
@@ -648,8 +648,8 @@ textarea[aria-invalid="true"] {
 
 .checkbox-option {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.8rem;
+  grid-template-columns: 1.1rem minmax(0, 1fr);
+  gap: 0.65rem;
   align-items: start;
   padding: 0.7rem 0.8rem;
   border: 1px solid rgba(200, 185, 166, 0.6);
@@ -672,7 +672,8 @@ textarea[aria-invalid="true"] {
 .checkbox-option input {
   width: 1.1rem;
   height: 1.1rem;
-  margin: 0.15rem 0 0;
+  margin: 0;
+  align-self: center;
 }
 
 .checkbox-option__copy {
@@ -697,16 +698,15 @@ textarea[aria-invalid="true"] {
 }
 
 #required-functions-options .checkbox-option {
-  grid-template-columns: 1rem minmax(0, 1fr);
-  min-height: 2rem;
-  padding: 0.55rem 0.7rem;
-  gap: 0.5rem;
+  min-height: 2.125rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.75rem;
+  gap: 0.55rem;
   align-items: center;
 }
 
 #required-functions-options .checkbox-option__label {
   font-size: 0.92rem;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 #required-functions-options .checkbox-option__definition {
@@ -1072,24 +1072,22 @@ textarea[aria-invalid="true"] {
 
 .checkbox-list--compact .checkbox-option,
 .checkbox-option--compact {
-  grid-template-columns: 1rem minmax(0, 1fr);
+  grid-template-columns: 1.1rem minmax(0, 1fr);
   align-items: center;
-  min-height: 2rem;
-  padding: 0.55rem 0.7rem;
-  gap: 0.5rem;
+  min-height: 2.125rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.75rem;
+  gap: 0.55rem;
 }
 
 .checkbox-list--compact .checkbox-option input,
 .checkbox-option--compact input {
-  width: 1rem;
-  height: 1rem;
   margin: 0;
   align-self: center;
 }
 
 .checkbox-list--compact .checkbox-option__copy,
 .checkbox-option__copy--centered {
-  min-height: 100%;
+  min-height: 0;
   display: flex;
   align-items: center;
 }
@@ -1097,7 +1095,7 @@ textarea[aria-invalid="true"] {
 .checkbox-list--compact .checkbox-option__label,
 .checkbox-option--compact .checkbox-option__label {
   font-size: 0.92rem;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .checkbox-list--compact .checkbox-option__definition {
