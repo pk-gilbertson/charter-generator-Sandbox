@@ -128,7 +128,6 @@ textarea {
 }
 
 .hero__lede,
-.hero__note,
 .section-heading p,
 .jump-nav__card p,
 .form-status,
@@ -214,75 +213,6 @@ textarea {
   margin-top: 0.55rem;
 }
 
-/* Dev branch top tabs preserved on the patched page. */
-.site-tabs {
-  position: sticky;
-  top: 0;
-  z-index: 25;
-  margin: 1.25rem 0 1.5rem;
-  border-top: 1px solid rgba(200, 185, 166, 0.75);
-  border-bottom: 1px solid rgba(200, 185, 166, 0.75);
-  background: rgba(247, 243, 236, 0.96);
-  backdrop-filter: blur(10px);
-}
-
-.site-tabs__inner {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0 1rem;
-  min-height: 58px;
-  align-items: center;
-}
-
-.site-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0.75rem 1rem;
-  border-bottom: 2px solid transparent;
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 0.98rem;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease, transform 140ms ease;
-}
-
-.site-tab:hover,
-.site-tab:focus-visible {
-  background: #efe8de;
-  color: #111a22;
-  outline: none;
-}
-
-.site-tab--active {
-  border-bottom-color: var(--steward-core);
-  color: #111a22;
-}
-
-.site-tab--primary {
-  margin-left: auto;
-  border-bottom-color: transparent;
-  background: var(--steward-core);
-  color: #ffffff;
-  border-radius: 999px;
-  min-height: 38px;
-  padding: 0.65rem 1rem;
-}
-
-.site-tab--primary:hover,
-.site-tab--primary:focus-visible {
-  background: #274d43;
-  color: #ffffff;
-}
-
-.site-tab--primary.site-tab--active {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65), 0 0 0 4px rgba(47, 93, 80, 0.18);
-}
-
 /* Main workspace with sticky jump navigation. */
 .workspace {
   display: grid;
@@ -365,15 +295,6 @@ textarea {
   margin: 0;
   font-size: 0.92rem;
   color: rgba(31, 41, 51, 0.76);
-}
-
-.content-stack {
-  grid-column: 2;
-  display: grid;
-  gap: 1rem;
-  min-width: 0;
-  width: 100%;
-  overflow: hidden;
 }
 
 #charter-form {
@@ -690,33 +611,6 @@ textarea[aria-invalid="true"] {
   font-size: 0.9rem;
   line-height: 1.45;
   color: rgba(31, 41, 51, 0.78);
-}
-
-#required-functions-options {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.45rem;
-}
-
-#required-functions-options .checkbox-option {
-  min-height: 2.125rem;
-  padding: 0.35rem 0.85rem 0.35rem 0.75rem;
-  gap: 0.55rem;
-  align-items: center;
-}
-
-#required-functions-options .checkbox-option__label {
-  font-size: 0.92rem;
-  line-height: 1.2;
-}
-
-#required-functions-options .checkbox-option__definition {
-  display: none;
-}
-
-@media (max-width: 720px) {
-  #required-functions-options {
-    grid-template-columns: 1fr;
-  }
 }
 
 .members-select {
@@ -1111,17 +1005,6 @@ textarea[aria-invalid="true"] {
   .jump-nav {
     position: static;
   }
-
-  .content-stack {
-    grid-column: auto;
-  }
-}
-
-/* Responsive adjustments prioritize readable form fields on narrow screens. */
-@media (max-width: 900px) {
-  .site-tab--primary {
-    margin-left: 0;
-  }
 }
 
 @media (max-width: 760px) {
@@ -1160,21 +1043,6 @@ textarea[aria-invalid="true"] {
 
   .jump-top__label {
     display: none;
-  }
-
-  .site-tabs__inner {
-    padding: 0.5rem 0.6rem;
-  }
-
-  .site-tab {
-    min-height: 40px;
-    padding: 0.65rem 0.85rem;
-    font-size: 0.95rem;
-  }
-
-  .site-tab--primary {
-    width: 100%;
-    justify-content: center;
   }
 }
 
