@@ -1087,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', () => {
       body: 21,
       label: 19,
       metadataHeader: 30,
-      metadataLabel: 17,
+      metadataLabel: 20,
       metadataValue: 21
     },
     spacing: {
