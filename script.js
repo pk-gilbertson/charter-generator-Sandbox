@@ -1066,22 +1066,126 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // DOCX helper factories keep document construction readable and reusable.
-  function blankParagraph(after = 120) {
-    return new docx.Paragraph({ text: '', spacing: { after } });
-  }
+  const DOCX_THEME = {
+    font: 'Aptos',
+    colors: {
+      ink: '1F2933',
+      subtitle: '5A6470',
+      heading1: '2F5D50',
+      heading2: 'A54A2A',
+      white: 'FFFFFF',
+      border: 'D8CEC2',
+      borderLight: 'EEE5DA',
+      rowAlt: 'FBF8F2',
+      neutralFill: 'F7F3EC'
+    },
+    sizes: {
+      title: 48,
+      subtitle: 24,
+      heading1: 30,
+      heading2: 24,
+      body: 21,
+      label: 19
+    },
+    spacing: {
+      titleAfter: 80,
+      subtitleAfter: 220,
+      sectionDividerBefore: 240,
+      sectionDividerAfter: 80,
+      heading1Before: 0,
+      heading1After: 100,
+      heading2Before: 200,
+      heading2After: 40,
+      bodyAfter: 80,
+      bodyLine: 276,
+      tableCellVertical: 80,
+      blankAfter: 120
+    },
+    sections: {
+      owner: { color: 'A54A2A', tint: 'EDDFD5' },
+      steward: { color: '2F5D50', tint: 'DFE1D9' },
+      custodian: { color: '5A2D5C', tint: 'E4DBDB' },
+      support: { color: '7A8691', tint: 'EEF1F4' }
+    }
+  };
 
-  function heading(text, level, color = '1F2933') {
-    return new docx.Paragraph({
-      heading: level,
-      spacing: { before: 220, after: 80 },
-      children: [new docx.TextRun({ text, bold: true, color })]
+  function createTextRun(text, options = {}) {
+    return new docx.TextRun({
+      text: String(text ?? ''),
+      font: options.font || DOCX_THEME.font,
+      size: options.size || DOCX_THEME.sizes.body,
+      color: options.color || DOCX_THEME.colors.ink,
+      bold: Boolean(options.bold),
+      italics: Boolean(options.italics),
+      allCaps: Boolean(options.allCaps)
     });
   }
 
-  function bodyParagraph(text) {
+  function getSectionTheme(sectionKey = 'support') {
+    return DOCX_THEME.sections[sectionKey] || DOCX_THEME.sections.support;
+  }
+
+  function blankParagraph(after = DOCX_THEME.spacing.blankAfter) {
     return new docx.Paragraph({
-      children: [new docx.TextRun({ text: String(text || '') })],
-      spacing: { after: 120 }
+      children: [createTextRun('')],
+      spacing: { after }
+    });
+  }
+
+  function createSectionDivider(sectionKey) {
+    const sectionTheme = getSectionTheme(sectionKey);
+    return new docx.Paragraph({
+      border: {
+        top: {
+          style: docx.BorderStyle.SINGLE,
+          size: 12,
+          color: sectionTheme.color,
+          space: 1
+        }
+      },
+      spacing: {
+        before: DOCX_THEME.spacing.sectionDividerBefore,
+        after: DOCX_THEME.spacing.sectionDividerAfter
+      },
+      children: [createTextRun('')]
+    });
+  }
+
+  function heading(text, level) {
+    const isPrimaryHeading = level === docx.HeadingLevel.HEADING_1;
+
+    return new docx.Paragraph({
+      heading: level,
+      keepNext: true,
+      spacing: {
+        before: isPrimaryHeading ? DOCX_THEME.spacing.heading1Before : DOCX_THEME.spacing.heading2Before,
+        after: isPrimaryHeading ? DOCX_THEME.spacing.heading1After : DOCX_THEME.spacing.heading2After
+      },
+      children: [
+        createTextRun(text, {
+          bold: true,
+          color: isPrimaryHeading ? DOCX_THEME.colors.heading1 : DOCX_THEME.colors.heading2,
+          size: isPrimaryHeading ? DOCX_THEME.sizes.heading1 : DOCX_THEME.sizes.heading2
+        })
+      ]
+    });
+  }
+
+  function bodyParagraph(text, options = {}) {
+    return new docx.Paragraph({
+      alignment: options.alignment,
+      spacing: {
+        after: options.after ?? DOCX_THEME.spacing.bodyAfter,
+        line: DOCX_THEME.spacing.bodyLine
+      },
+      children: [
+        createTextRun(text, {
+          bold: Boolean(options.bold),
+          italics: Boolean(options.italics),
+          color: options.color || DOCX_THEME.colors.ink,
+          size: options.size || DOCX_THEME.sizes.body
+        })
+      ]
     });
   }
 
@@ -1092,22 +1196,47 @@ document.addEventListener('DOMContentLoaded', () => {
   function bulletList(items) {
     const lines = Array.isArray(items) ? items.filter(Boolean) : toLines(items);
     return lines.map(
-      (item) => new docx.Paragraph({ text: item, bullet: { level: 0 }, spacing: { after: 80 } })
+      (item) =>
+        new docx.Paragraph({
+          bullet: { level: 0 },
+          spacing: { after: DOCX_THEME.spacing.bodyAfter, line: DOCX_THEME.spacing.bodyLine },
+          children: [createTextRun(item)]
+        })
     );
+  }
+
+  function getTableBorders(accentColor) {
+    return {
+      top: {
+        style: docx.BorderStyle.SINGLE,
+        size: accentColor ? 6 : 1,
+        color: accentColor || DOCX_THEME.colors.border
+      },
+      bottom: { style: docx.BorderStyle.SINGLE, size: 1, color: DOCX_THEME.colors.border },
+      left: { style: docx.BorderStyle.SINGLE, size: 1, color: DOCX_THEME.colors.border },
+      right: { style: docx.BorderStyle.SINGLE, size: 1, color: DOCX_THEME.colors.border },
+      insideHorizontal: { style: docx.BorderStyle.SINGLE, size: 1, color: DOCX_THEME.colors.borderLight },
+      insideVertical: { style: docx.BorderStyle.SINGLE, size: 1, color: DOCX_THEME.colors.borderLight }
+    };
   }
 
   function tableCell(text, options = {}) {
     return new docx.TableCell({
       shading: options.shading ? { fill: options.shading } : undefined,
       verticalAlign: docx.VerticalAlign.CENTER,
+      width: options.width,
       children: [
         new docx.Paragraph({
-          spacing: { before: 60, after: 60 },
+          spacing: {
+            before: DOCX_THEME.spacing.tableCellVertical,
+            after: DOCX_THEME.spacing.tableCellVertical,
+            line: DOCX_THEME.spacing.bodyLine
+          },
           children: [
-            new docx.TextRun({
-              text: String(text || ''),
+            createTextRun(text, {
               bold: Boolean(options.bold),
-              color: options.color || '1F2933'
+              color: options.color || DOCX_THEME.colors.ink,
+              size: options.size || DOCX_THEME.sizes.body
             })
           ]
         })
@@ -1115,46 +1244,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function getTableBorders() {
-    return {
-      top: { style: docx.BorderStyle.SINGLE, size: 1, color: 'C8B9A6' },
-      bottom: { style: docx.BorderStyle.SINGLE, size: 1, color: 'C8B9A6' },
-      left: { style: docx.BorderStyle.SINGLE, size: 1, color: 'C8B9A6' },
-      right: { style: docx.BorderStyle.SINGLE, size: 1, color: 'C8B9A6' },
-      insideHorizontal: { style: docx.BorderStyle.SINGLE, size: 1, color: 'E8DDD0' },
-      insideVertical: { style: docx.BorderStyle.SINGLE, size: 1, color: 'E8DDD0' }
-    };
-  }
+  function createKeyValueTable(rows, sectionKey = 'support') {
+    const sectionTheme = getSectionTheme(sectionKey);
 
-  function createKeyValueTable(rows) {
     return new docx.Table({
       width: { size: 100, type: docx.WidthType.PERCENTAGE },
       layout: docx.TableLayoutType.FIXED,
-      borders: getTableBorders(),
+      borders: getTableBorders(sectionTheme.color),
       rows: rows.map(
-        ([label, value]) =>
+        ([label, value], index) =>
           new docx.TableRow({
             children: [
-              new docx.TableCell({
+              tableCell(label, {
                 width: { size: 28, type: docx.WidthType.PERCENTAGE },
-                shading: { fill: 'F7F3EC' },
-                verticalAlign: docx.VerticalAlign.CENTER,
-                children: [
-                  new docx.Paragraph({
-                    spacing: { before: 80, after: 80 },
-                    children: [new docx.TextRun({ text: label, bold: true, color: '1F2933' })]
-                  })
-                ]
+                shading: sectionTheme.tint,
+                bold: true,
+                color: sectionTheme.color
               }),
-              new docx.TableCell({
+              tableCell(value, {
                 width: { size: 72, type: docx.WidthType.PERCENTAGE },
-                verticalAlign: docx.VerticalAlign.CENTER,
-                children: [
-                  new docx.Paragraph({
-                    spacing: { before: 80, after: 80 },
-                    children: [new docx.TextRun({ text: String(value || '') })]
-                  })
-                ]
+                shading: index % 2 === 0 ? 'FFFFFF' : DOCX_THEME.colors.rowAlt
               })
             ]
           })
@@ -1162,26 +1271,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function createDataTable(headers, linesText, expectedParts, fallbackText, headerFill, headerTextColor) {
+  function createDataTable(headers, linesText, expectedParts, fallbackText, sectionKey = 'support') {
     const lines = toLines(linesText || fallbackText);
     const rows = lines.map((line) => splitWithLimit(line, expectedParts));
+    const sectionTheme = getSectionTheme(sectionKey);
 
     return new docx.Table({
       width: { size: 100, type: docx.WidthType.PERCENTAGE },
       layout: docx.TableLayoutType.FIXED,
-      borders: getTableBorders(),
+      borders: getTableBorders(sectionTheme.color),
       rows: [
         new docx.TableRow({
           tableHeader: true,
           children: headers.map((header) =>
-            tableCell(header, { bold: true, shading: headerFill, color: headerTextColor })
+            tableCell(header, {
+              bold: true,
+              shading: sectionTheme.color,
+              color: DOCX_THEME.colors.white,
+              size: DOCX_THEME.sizes.label
+            })
           )
         }),
         ...rows.map(
           (row, index) =>
             new docx.TableRow({
               children: row.map((value) =>
-                tableCell(value, { shading: index % 2 === 0 ? 'FFFFFF' : 'FBF8F2' })
+                tableCell(value, { shading: index % 2 === 0 ? 'FFFFFF' : DOCX_THEME.colors.rowAlt })
               )
             })
         )
@@ -1189,24 +1304,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function createMembersDocTable(members) {
+  function createMembersDocTable(members, sectionKey = 'steward') {
     const rows = members.length > 0 ? members : [{ name: '', title: '', role: '', voting: '' }];
+    const sectionTheme = getSectionTheme(sectionKey);
 
     return new docx.Table({
       width: { size: 100, type: docx.WidthType.PERCENTAGE },
       layout: docx.TableLayoutType.FIXED,
-      borders: getTableBorders(),
+      borders: getTableBorders(sectionTheme.color),
       rows: [
         new docx.TableRow({
           tableHeader: true,
           children: MEMBER_COLUMNS.map((column) =>
-            tableCell(column, { bold: true, shading: '2F5D50', color: 'FFFFFF' })
+            tableCell(column, {
+              bold: true,
+              shading: sectionTheme.color,
+              color: DOCX_THEME.colors.white,
+              size: DOCX_THEME.sizes.label
+            })
           )
         }),
         ...rows.map((member, index) =>
           new docx.TableRow({
             children: [member.name, member.title, member.role, member.voting].map((value) =>
-              tableCell(value, { shading: index % 2 === 0 ? 'FFFFFF' : 'FBF8F2' })
+              tableCell(value, { shading: index % 2 === 0 ? 'FFFFFF' : DOCX_THEME.colors.rowAlt })
             )
           })
         )
@@ -1214,10 +1335,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function createSection(title, color, buildContent) {
+  function createSection(title, sectionKey, buildContent) {
     const content = buildContent();
     if (!Array.isArray(content) || content.length === 0) return [];
-    return [heading(title, docx.HeadingLevel.HEADING_1, color), ...content, blankParagraph()];
+    return [createSectionDivider(sectionKey), heading(title, docx.HeadingLevel.HEADING_1), ...content, blankParagraph()];
   }
 
   function buildDocument() {
@@ -1234,16 +1355,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const meetingFrequency = getFieldValue('meeting-frequency', DEFAULTS['meeting-frequency']);
     const decisionMaking = getFieldValue('decision-making', DEFAULTS['decision-making']);
 
-    const metadataTable = createKeyValueTable([
-      ['Agency / Department', agencyName],
-      ['Charter Name', charterName],
-      ['Committee Type', committeeType],
-      ['Organizational Scope', agencyScope],
-      ['Executive Sponsor', executiveSponsor],
-      ['Chair / Lead', chairLead],
-      ['Effective Date', effectiveDate],
-      ['Term & Review Cycle', termReview]
-    ]);
+    const metadataTable = createKeyValueTable(
+      [
+        ['Agency / Department', agencyName],
+        ['Charter Name', charterName],
+        ['Committee Type', committeeType],
+        ['Organizational Scope', agencyScope],
+        ['Executive Sponsor', executiveSponsor],
+        ['Chair / Lead', chairLead],
+        ['Effective Date', effectiveDate],
+        ['Term & Review Cycle', termReview]
+      ],
+      'owner'
+    );
 
     const memberRows = getMemberRows().filter((row) => isMeaningfulMemberRow(row));
     const votingMembers = memberRows.filter((row) => row.voting === 'Voting');
@@ -1254,117 +1378,128 @@ document.addEventListener('DOMContentLoaded', () => {
       getOptionalValue('version-history') || DEFAULTS['version-history'],
       4,
       DEFAULTS['version-history'],
-      '5A2D5C',
-      'FFFFFF'
+      'custodian'
     );
 
     const children = [
       new docx.Paragraph({
         alignment: docx.AlignmentType.CENTER,
-        spacing: { after: 80 },
-        children: [new docx.TextRun({ text: charterName, bold: true, size: 34, color: '1F2933' })]
+        spacing: { after: DOCX_THEME.spacing.titleAfter },
+        children: [
+          createTextRun(charterName, {
+            bold: true,
+            size: DOCX_THEME.sizes.title,
+            color: DOCX_THEME.colors.ink
+          })
+        ]
       }),
       new docx.Paragraph({
         alignment: docx.AlignmentType.CENTER,
-        spacing: { after: 220 },
-        children: [new docx.TextRun({ text: agencyName, size: 24, color: '5A6470' })]
+        spacing: { after: DOCX_THEME.spacing.subtitleAfter },
+        children: [
+          createTextRun(agencyName, {
+            size: DOCX_THEME.sizes.subtitle,
+            color: DOCX_THEME.colors.subtitle
+          })
+        ]
       }),
       metadataTable,
       blankParagraph(60),
 
-      ...createSection('1. Purpose', 'A54A2A', () => multiParagraphs(getTextValue('purpose', DEFAULTS.purpose))),
-      ...createSection('2. Vision & Mission', 'A54A2A', () => [
-        heading('Vision', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+      ...createSection('1. Purpose', 'owner', () => multiParagraphs(getTextValue('purpose', DEFAULTS.purpose))),
+      ...createSection('2. Vision & Mission', 'owner', () => [
+        heading('Vision', docx.HeadingLevel.HEADING_2),
         ...multiParagraphs(getTextValue('vision', DEFAULTS.vision)),
-        heading('Mission', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        heading('Mission', docx.HeadingLevel.HEADING_2),
         ...multiParagraphs(getTextValue('mission', DEFAULTS.mission))
       ]),
-      ...createSection('3. Objectives', 'A54A2A', () => bulletList(getTextValue('objectives', DEFAULTS.objectives))),
-      ...createSection('4. Success Metrics', 'A54A2A', () =>
+      ...createSection('3. Objectives', 'owner', () => bulletList(getTextValue('objectives', DEFAULTS.objectives))),
+      ...createSection('4. Success Metrics', 'owner', () =>
         bulletList(getTextValue('success-metrics', DEFAULTS['success-metrics']))
       ),
 
-      ...createSection('5. Scope & Authority', 'A54A2A', () => [
-        heading('In Scope', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+      ...createSection('5. Scope & Authority', 'owner', () => [
+        heading('In Scope', docx.HeadingLevel.HEADING_2),
         ...bulletList(getTextValue('in-scope', DEFAULTS['in-scope'])),
-        heading('Out of Scope', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        heading('Out of Scope', docx.HeadingLevel.HEADING_2),
         ...bulletList(getTextValue('out-of-scope', DEFAULTS['out-of-scope'])),
-        heading('Decision Authority', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        heading('Decision Authority', docx.HeadingLevel.HEADING_2),
         bodyParagraph(decisionAuthority),
-        heading('Escalation Path', docx.HeadingLevel.HEADING_2, 'A54A2A'),
+        heading('Escalation Path', docx.HeadingLevel.HEADING_2),
         ...multiParagraphs(getTextValue('escalation-path', DEFAULTS['escalation-path']))
       ]),
 
-      ...createSection('6. Guiding Principles', '2F5D50', () =>
+      ...createSection('6. Guiding Principles', 'steward', () =>
         bulletList(getTextValue('guiding-principles', DEFAULTS['guiding-principles']))
       ),
 
-      ...createSection('7. Membership & Representation', '2F5D50', () => [
-        heading('Committee Members - Voting', docx.HeadingLevel.HEADING_2, '2F5D50'),
-        createMembersDocTable(votingMembers),
-        heading('Committee Members - Non-Voting', docx.HeadingLevel.HEADING_2, '2F5D50'),
-        createMembersDocTable(nonVotingMembers),
-        heading('Required Functions / Perspectives', docx.HeadingLevel.HEADING_2, '2F5D50'),
+      ...createSection('7. Membership & Representation', 'steward', () => [
+        heading('Committee Members - Voting', docx.HeadingLevel.HEADING_2),
+        createMembersDocTable(votingMembers, 'steward'),
+        heading('Committee Members - Non-Voting', docx.HeadingLevel.HEADING_2),
+        createMembersDocTable(nonVotingMembers, 'steward'),
+        heading('Required Functions / Perspectives', docx.HeadingLevel.HEADING_2),
         ...bulletList(requiredFunctions),
-        heading('Role Definitions', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        heading('Role Definitions', docx.HeadingLevel.HEADING_2),
         ...bulletList(getTextValue('role-definitions', DEFAULTS['role-definitions']))
       ]),
 
-      ...createSection('8. Responsibilities & Deliverables', '2F5D50', () => [
-        heading('Committee Responsibilities', docx.HeadingLevel.HEADING_2, '2F5D50'),
+      ...createSection('8. Responsibilities & Deliverables', 'steward', () => [
+        heading('Committee Responsibilities', docx.HeadingLevel.HEADING_2),
         ...bulletList(getTextValue('responsibilities', DEFAULTS.responsibilities)),
-        heading('Annual or Initial Priorities', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        heading('Annual or Initial Priorities', docx.HeadingLevel.HEADING_2),
         ...bulletList(getTextValue('annual-priorities', DEFAULTS['annual-priorities'])),
-        heading('Key Deliverables', docx.HeadingLevel.HEADING_2, '2F5D50'),
+        heading('Key Deliverables', docx.HeadingLevel.HEADING_2),
         ...bulletList(getTextValue('key-deliverables', DEFAULTS['key-deliverables']))
       ]),
 
-      ...createSection('9. Operating Model', '5A2D5C', () => {
-        const operatingModelTable = createKeyValueTable([
-          ['Meeting Frequency', meetingFrequency],
-          ['Quorum', getFieldValue('quorum', DEFAULTS.quorum)],
-          ['Decision-Making Process', decisionMaking]
-        ]);
+      ...createSection('9. Operating Model', 'custodian', () => {
+        const operatingModelTable = createKeyValueTable(
+          [
+            ['Meeting Frequency', meetingFrequency],
+            ['Quorum', getFieldValue('quorum', DEFAULTS.quorum)],
+            ['Decision-Making Process', decisionMaking]
+          ],
+          'custodian'
+        );
 
         return [
           operatingModelTable,
-          heading('Meeting Administration', docx.HeadingLevel.HEADING_2, '5A2D5C'),
+          heading('Meeting Administration', docx.HeadingLevel.HEADING_2),
           ...multiParagraphs(getTextValue('meeting-administration', DEFAULTS['meeting-administration']))
         ];
       }),
 
-      ...createSection('10. Policy, Privacy, Security & Sharing', '5A2D5C', () => {
+      ...createSection('10. Policy, Privacy, Security & Sharing', 'custodian', () => {
         const content = [];
         const policyAlignment = getOptionalValue('policy-alignment');
         const privacySecurity = getOptionalValue('privacy-security-considerations');
         const dataSharing = getOptionalValue('data-sharing');
 
         if (policyAlignment) {
-          content.push(heading('Policy / Legal / Regulatory Alignment', docx.HeadingLevel.HEADING_2, '5A2D5C'));
+          content.push(heading('Policy / Legal / Regulatory Alignment', docx.HeadingLevel.HEADING_2));
           content.push(...multiParagraphs(policyAlignment));
         }
 
         if (privacySecurity) {
-          content.push(
-            heading('Privacy, Security & Data Release Considerations', docx.HeadingLevel.HEADING_2, '5A2D5C')
-          );
+          content.push(heading('Privacy, Security & Data Release Considerations', docx.HeadingLevel.HEADING_2));
           content.push(...multiParagraphs(privacySecurity));
         }
 
         if (dataSharing) {
-          content.push(heading('Data Sharing & Access Considerations', docx.HeadingLevel.HEADING_2, '5A2D5C'));
+          content.push(heading('Data Sharing & Access Considerations', docx.HeadingLevel.HEADING_2));
           content.push(...multiParagraphs(dataSharing));
         }
 
         return content;
       }),
 
-      ...createSection('11. Working Groups & Subcommittees', '5A2D5C', () => {
+      ...createSection('11. Working Groups & Subcommittees', 'custodian', () => {
         const subcommittees = getOptionalValue('subcommittees');
         return subcommittees ? bulletList(subcommittees) : [];
       }),
 
-      ...createSection('12. Version History', '5A2D5C', () => [versionHistoryTable])
+      ...createSection('12. Version History', 'custodian', () => [versionHistoryTable])
     ];
 
     return new docx.Document({
