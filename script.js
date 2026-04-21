@@ -1087,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', () => {
       body: 21,
       label: 19,
       metadataHeader: 30,
-      metadataLabel: 20,
+      metadataLabel: 17,
       metadataValue: 21
     },
     spacing: {
@@ -1288,10 +1288,10 @@ document.addEventListener('DOMContentLoaded', () => {
           children: [
             new docx.TableCell({
               columnSpan: 2,
-              shading: { fill: DOCX_THEME.colors.neutralFill },
+              shading: { fill: sectionTheme.tint },
               children: [
                 new docx.Paragraph({
-                  alignment: docx.AlignmentType.CENTER,
+                  alignment: docx.AlignmentType.LEFT,
                   spacing: {
                     before: DOCX_THEME.spacing.tableCellVertical,
                     after: DOCX_THEME.spacing.tableCellVertical
@@ -1322,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }),
                 tableCell(value, {
                   width: { size: 72, type: docx.WidthType.PERCENTAGE },
-                  shading: index % 2 === 0 ? 'FFFFFF' : DOCX_THEME.colors.rowAlt,
+                  shading: DOCX_THEME.colors.white,
                   bold: true,
                   color: DOCX_THEME.colors.ink,
                   size: DOCX_THEME.sizes.metadataValue
