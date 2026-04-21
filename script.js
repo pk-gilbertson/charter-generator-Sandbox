@@ -1225,21 +1225,77 @@ document.addEventListener('DOMContentLoaded', () => {
       shading: options.shading ? { fill: options.shading } : undefined,
       verticalAlign: docx.VerticalAlign.CENTER,
       width: options.width,
+      columnSpan: options.columnSpan,
+      margins: options.margins,
       children: [
         new docx.Paragraph({
+          alignment: options.alignment,
           spacing: {
-            before: DOCX_THEME.spacing.tableCellVertical,
-            after: DOCX_THEME.spacing.tableCellVertical,
+            before: options.paddingY ?? DOCX_THEME.spacing.tableCellVertical,
+            after: options.paddingY ?? DOCX_THEME.spacing.tableCellVertical,
             line: DOCX_THEME.spacing.bodyLine
           },
           children: [
             createTextRun(text, {
               bold: Boolean(options.bold),
+              italics: Boolean(options.italics),
+              allCaps: Boolean(options.allCaps),
               color: options.color || DOCX_THEME.colors.ink,
               size: options.size || DOCX_THEME.sizes.body
             })
           ]
         })
+      ]
+    });
+  }
+
+  function createMetadataTable(rows, sectionKey = 'owner') {
+    const sectionTheme = getSectionTheme(sectionKey);
+
+    return new docx.Table({
+      width: { size: 100, type: docx.WidthType.PERCENTAGE },
+      layout: docx.TableLayoutType.FIXED,
+      borders: getTableBorders(sectionTheme.color),
+      rows: [
+        new docx.TableRow({
+          children: [
+            tableCell('Charter Overview', {
+              columnSpan: 2,
+              shading: sectionTheme.tint,
+              bold: true,
+              color: sectionTheme.color,
+              size: DOCX_THEME.sizes.label,
+              margins: { top: 80, bottom: 80, left: 160, right: 160 },
+              paddingY: 60
+            })
+          ]
+        }),
+        ...rows.map(
+          ([label, value]) =>
+            new docx.TableRow({
+              children: [
+                tableCell(label, {
+                  width: { size: 31, type: docx.WidthType.PERCENTAGE },
+                  shading: DOCX_THEME.colors.neutralFill,
+                  bold: true,
+                  allCaps: true,
+                  color: DOCX_THEME.colors.subtitle,
+                  size: 17,
+                  margins: { top: 120, bottom: 120, left: 160, right: 140 },
+                  paddingY: 70
+                }),
+                tableCell(value, {
+                  width: { size: 69, type: docx.WidthType.PERCENTAGE },
+                  shading: 'FFFFFF',
+                  bold: true,
+                  color: DOCX_THEME.colors.ink,
+                  size: DOCX_THEME.sizes.body,
+                  margins: { top: 120, bottom: 120, left: 180, right: 180 },
+                  paddingY: 70
+                })
+              ]
+            })
+        )
       ]
     });
   }
@@ -1355,7 +1411,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const meetingFrequency = getFieldValue('meeting-frequency', DEFAULTS['meeting-frequency']);
     const decisionMaking = getFieldValue('decision-making', DEFAULTS['decision-making']);
 
-    const metadataTable = createKeyValueTable(
+    const metadataTable = createMetadataTable(
       [
         ['Agency / Department', agencyName],
         ['Charter Name', charterName],
