@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const sortRoleDefinitionsBtn = document.getElementById('sort-role-definitions');
   const jumpTopButton = document.getElementById('jump-to-top');
   const resetButton = document.getElementById('reset-form-button');
+  const jumpNavCard = document.getElementById('jump-nav-card');
+  const jumpNavToggle = document.getElementById('jump-nav-toggle');
+  const JUMP_NAV_COLLAPSE_THRESHOLD = 120;
 
   let docx = null;
   let initialFormSnapshot = '';
@@ -441,10 +444,23 @@ document.addEventListener('DOMContentLoaded', () => {
     return Math.max(360, Math.round(window.innerHeight * 0.45));
   }
 
+  function setJumpNavCollapsed(collapsed) {
+    if (!jumpNavCard || !jumpNavToggle) return;
+    jumpNavCard.classList.toggle('is-collapsed', collapsed);
+    jumpNavToggle.setAttribute('aria-expanded', String(!collapsed));
+  }
+
   function updateJumpTopVisibility() {
     if (!jumpTopButton) return;
     const shouldShow = window.scrollY > getJumpThreshold();
     jumpTopButton.classList.toggle('is-visible', shouldShow);
+
+    // Auto-collapse Jump to Section when scrolling down, re-open near top
+    if (window.scrollY > JUMP_NAV_COLLAPSE_THRESHOLD) {
+      setJumpNavCollapsed(true);
+    } else {
+      setJumpNavCollapsed(false);
+    }
   }
 
   function scrollToTop() {
@@ -1653,6 +1669,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (jumpTopButton) {
     jumpTopButton.addEventListener('click', scrollToTop);
+  }
+
+  if (jumpNavToggle && jumpNavCard) {
+    jumpNavToggle.addEventListener('click', () => {
+      const isCollapsed = jumpNavCard.classList.contains('is-collapsed');
+      setJumpNavCollapsed(!isCollapsed);
+    });
   }
 
   window.addEventListener('scroll', updateJumpTopVisibility, { passive: true });

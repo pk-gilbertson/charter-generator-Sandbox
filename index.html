@@ -39,8 +39,13 @@
 <!-- Workspace pairs persistent jump navigation with the editable charter form. -->
 <div class="workspace" id="main-content">
 <nav aria-label="Section navigation" class="jump-nav">
-<div class="jump-nav__card">
-<h2>Jump to section</h2>
+<div class="jump-nav__card jump-nav__card--collapsible" id="jump-nav-card">
+<button aria-controls="jump-nav-body" aria-expanded="true" class="jump-nav__toggle" id="jump-nav-toggle" type="button">
+Jump to section
+<span aria-hidden="true" class="jump-nav__toggle-chevron">▼</span>
+</button>
+<div class="jump-nav__collapsible-body" id="jump-nav-body">
+<div class="jump-nav__collapsible-inner">
 <ol>
 <li><a href="#section-basics">Charter Basics</a></li>
 <li><a href="#section-purpose">Purpose &amp; Outcomes</a></li>
@@ -52,6 +57,8 @@
 <li><a href="#section-advanced">Advanced Sections</a></li>
 <li><a href="#section-generate">Generate Charter</a></li>
 </ol>
+</div>
+</div>
 </div>
 <div class="jump-nav__card jump-nav__card--support">
 <h2>Draft status</h2>

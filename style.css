@@ -227,15 +227,82 @@ textarea {
   align-self: start;
   display: grid;
   gap: 1rem;
-  
-}
-.jump-nav__card:first-child {
-  max-height: calc(100vh - 14rem);
-  overflow-y: auto;
 }
 
 .jump-nav__card {
   padding: 1.25rem;
+}
+
+/* Collapsible Jump to Section card */
+.jump-nav__card--collapsible .jump-nav__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.jump-nav__toggle-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: rgba(200, 185, 166, 0.3);
+  font-size: 0.75rem;
+  color: rgba(31, 41, 51, 0.6);
+  transition: transform 220ms ease, background 140ms ease;
+  flex-shrink: 0;
+}
+
+.jump-nav__card--collapsible:not(.is-collapsed) .jump-nav__toggle-chevron {
+  transform: rotate(180deg);
+}
+
+.jump-nav__collapsible-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 220ms ease, opacity 200ms ease;
+  opacity: 1;
+}
+
+.jump-nav__card--collapsible.is-collapsed .jump-nav__collapsible-body {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.jump-nav__collapsible-inner {
+  overflow: hidden;
+}
+
+/* Scrollbar styling for the nav cards — thin and styled to match the page */
+.jump-nav__card {
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--divider) transparent;
+}
+
+.jump-nav__card::-webkit-scrollbar {
+  width: 5px;
+}
+
+.jump-nav__card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jump-nav__card::-webkit-scrollbar-thumb {
+  background: var(--divider);
+  border-radius: 999px;
 }
 
 .jump-nav__card ol {
