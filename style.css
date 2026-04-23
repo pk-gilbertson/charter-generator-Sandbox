@@ -227,9 +227,11 @@ textarea {
   align-self: start;
   display: grid;
   gap: 1rem;
-  max-height: calc(100vh - 6rem);
-  overflow-y: auto;
   
+}
+.jump-nav__card:first-child {
+  max-height: calc(100vh - 14rem);
+  overflow-y: auto;
 }
 
 .jump-nav__card {
