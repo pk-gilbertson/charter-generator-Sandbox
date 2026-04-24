@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
   // Cache frequently accessed DOM nodes and shared UI state.
   const form = document.getElementById('charter-form');
   const statusEl = document.getElementById('form-status');
@@ -29,9 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Charter form not found.');
     return;
   }
-
-  // Resolve the docx library once at startup — deferred scripts execute before DOMContentLoaded.
-  docx = resolveDocx();
 
   const MEMBER_COLUMNS = ['Name', 'Title', 'Role', 'Voting Status'];
   const DEFAULT_ROLE_DEFINITION_LINES = [
@@ -357,7 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'agency-scope': 'Agency / Department',
     'executive-sponsor': 'Secretary Example Sponsor',
     'chair-lead': 'Committee Chair',
-    'effective-date': new Date().toISOString().slice(0, 10),
+    // Getters so the date is always "today" even in long-lived sessions.
+    get 'effective-date'() { return new Date().toISOString().slice(0, 10); },
     'term-review': 'Effective until revised or rescinded; reviewed annually.',
     purpose:
       'The purpose of this committee is to establish direction, accountability, and oversight for the management and use of data as a strategic asset in support of agency operations, policy, reporting, and responsible innovation.',
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'data-sharing':
       'The committee may review or support processes related to internal sharing, external sharing, access requests, and associated agreements or approvals, consistent with agency and enterprise requirements.',
     subcommittees: 'Data Quality Working Group\nMetadata and Standards Working Group',
-    'version-history': `1.0, ${new Date().toISOString().slice(0, 10)}, System, Initial charter generated`
+    get 'version-history'() { return `1.0, ${new Date().toISOString().slice(0, 10)}, System, Initial charter generated`; }
   };
 
   // Show/hide the "Back to top" control based on scroll depth.
@@ -515,6 +515,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return requiredKeys.every((key) => key in library) ? library : null;
   }
+
+  // Deferred scripts execute before DOMContentLoaded, so the library is available here.
+  docx = resolveDocx();
 
   // Generic value helpers keep null/empty handling consistent across fields.
   function getField(id) {
@@ -596,6 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     roleDefinitionsField.value = sortedLines.join('\n');
     updateHelpers();
+    scheduleSave();
   }
 
   // Splits a comma-delimited line into exactly `expectedParts` columns.
@@ -1055,6 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initMembersTable();
       }
       updateHelpers();
+      scheduleSave();
     });
 
     tdDelete.appendChild(deleteButton);
@@ -1069,9 +1074,6 @@ document.addEventListener('DOMContentLoaded', () => {
     membersTbody.appendChild(createMemberRow());
   }
 
-  function clearMembersTable() {
-    initMembersTable();
-  }
 
   function populateMembersTable(members) {
     if (!membersTbody) return;
@@ -1162,6 +1164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAllStructuredFieldStates();
     updateHelpers();
     setStatus('Starter content loaded. Review and customize before export.', 'success');
+    scheduleSave();
   }
 
   // DOCX helper factories keep document construction readable and reusable.
@@ -1742,7 +1745,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clearStorage();
       REQUIRED_FIELD_IDS.forEach((id) => setAriaInvalid(id, false));
       setStatus('');
-      clearMembersTable();
+      initMembersTable();
       setTextValue('role-definitions', DEFAULT_ROLE_DEFINITION_LINES.join('\n'));
       updateAllStructuredFieldStates();
       updateHelpers();
@@ -1789,6 +1792,7 @@ document.addEventListener('DOMContentLoaded', () => {
       membersTbody.appendChild(row);
       row.querySelector('[data-member-key="name"]')?.focus();
       updateHelpers();
+      scheduleSave();
     });
   }
 

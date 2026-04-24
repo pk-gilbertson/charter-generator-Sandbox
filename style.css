@@ -28,6 +28,11 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --font-sans: Aptos, Arial, Calibri, "Segoe UI", sans-serif;
+  --error-core: #b42318;
+  --error-hover: #9a1e15;
+  --error-dark: #7a1f18;
+  --error-tint: rgba(253, 236, 234, 0.7);
+  --error-core-rgb: 180, 35, 24;
 }
 
 * {
@@ -606,8 +611,8 @@ a:focus-visible {
 
 input[aria-invalid="true"],
 textarea[aria-invalid="true"] {
-  border-color: #b42318;
-  box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.08);
+  border-color: var(--error-core);
+  box-shadow: 0 0 0 2px rgba(var(--error-core-rgb), 0.08);
 }
 
 .selection-note {
@@ -781,7 +786,7 @@ textarea[aria-invalid="true"] {
 
 .button--sidebar {
   width: 100%;
-  justify-content: center;
+  text-align: center;
 }
 
 .button--ghost {
@@ -812,14 +817,14 @@ textarea[aria-invalid="true"] {
 }
 
 .button--danger {
-  background: #b42318;
+  background: var(--error-core);
   color: #fff;
-  box-shadow: 0 6px 16px rgba(180, 35, 24, 0.2);
+  box-shadow: 0 6px 16px rgba(var(--error-core-rgb), 0.2);
 }
 
 .button--danger:hover {
-  background: #9a1e15;
-  box-shadow: 0 8px 20px rgba(180, 35, 24, 0.28);
+  background: var(--error-hover);
+  box-shadow: 0 8px 20px rgba(var(--error-core-rgb), 0.28);
 }
 
 .form-status {
@@ -833,7 +838,7 @@ textarea[aria-invalid="true"] {
 }
 
 .form-status.error {
-  color: #b42318;
+  color: var(--error-core);
 }
 
 /* Members table */
@@ -931,8 +936,8 @@ textarea[aria-invalid="true"] {
 
 .members-delete-btn:hover {
   background: #fdecea;
-  color: #b42318;
-  border-color: rgba(180, 35, 24, 0.3);
+  color: var(--error-core);
+  border-color: rgba(var(--error-core-rgb), 0.3);
   transform: none;
 }
 
@@ -944,9 +949,9 @@ textarea[aria-invalid="true"] {
   display: grid;
   gap: 0.5rem;
   padding: 0.75rem;
-  border: 1px solid rgba(180, 35, 24, 0.22);
+  border: 1px solid rgba(var(--error-core-rgb), 0.22);
   border-radius: var(--radius-sm);
-  background: rgba(253, 236, 234, 0.7);
+  background: var(--error-tint);
 }
 
 .reset-confirm[hidden] {
@@ -956,7 +961,7 @@ textarea[aria-invalid="true"] {
 .reset-confirm__message {
   margin: 0;
   font-size: 0.9rem;
-  color: #7a1f18;
+  color: var(--error-dark);
   line-height: 1.4;
 }
 
@@ -1210,8 +1215,14 @@ textarea[aria-invalid="true"] {
     overflow: visible;
   }
 
-  details .advanced-panel__body {
+  /* Reveal body of any advanced panel that was collapsed before printing. */
+  details:not([open]) .advanced-panel__body {
     display: block;
+  }
+
+  /* Hide the open/close toggle indicator — it is meaningless on paper. */
+  .advanced-panel summary::after {
+    display: none;
   }
 
   input,
