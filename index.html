@@ -63,7 +63,7 @@ Jump to section
 <div class="jump-nav__card jump-nav__card--support">
 <h2>Draft status</h2>
 <p id="completion-text">Start with the charter basics and purpose sections.</p>
-<div aria-hidden="true" class="progress">
+<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="completion-text" id="completion-progress">
 <span id="completion-bar"></span>
 </div>
 <p class="filename-label">Download name</p>
@@ -76,6 +76,13 @@ Jump to section
 <p class="utility-label">Form actions</p>
 <button aria-describedby="reset-form-helper" class="button button--utility button--sidebar" id="reset-form-button" type="button">Reset form</button>
 <p class="jump-nav__helper" id="reset-form-helper">Clears entered content and returns the form to its default state.</p>
+<div class="reset-confirm" id="reset-confirm" hidden>
+<p class="reset-confirm__message">This will clear all entered content. Continue?</p>
+<div class="reset-confirm__actions">
+<button class="button button--utility reset-confirm__cancel" id="reset-cancel" type="button">Cancel</button>
+<button class="button button--danger reset-confirm__proceed" id="reset-confirm-btn" type="button">Yes, reset</button>
+</div>
+</div>
 </div>
 </div>
 </nav>
@@ -427,6 +434,8 @@ Interoperability Working Group" rows="5"></textarea>
 <span class="jump-top__label">Top</span>
 </button>
 <!-- Load third-party libraries first, then initialize page behavior. -->
+<!-- TODO: Add integrity="sha384-<hash>" crossorigin="anonymous" to both CDN scripts below.
+     Generate hashes with: curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A -->
 <script defer="" src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <script defer="" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script defer="" src="script.js"></script>
