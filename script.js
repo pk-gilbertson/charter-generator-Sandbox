@@ -464,11 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
     jumpTopButton.classList.toggle('is-visible', shouldShow);
 
     // Auto-collapse Jump to Section when scrolling down, re-open near top
-    if (window.scrollY > JUMP_NAV_COLLAPSE_THRESHOLD) {
-      setJumpNavCollapsed(true);
-    } else {
-      setJumpNavCollapsed(false);
-    }
+    setJumpNavCollapsed(window.scrollY > JUMP_NAV_COLLAPSE_THRESHOLD);
   }
 
   function scrollToTop() {
@@ -1073,7 +1069,6 @@ document.addEventListener('DOMContentLoaded', () => {
     membersTbody.innerHTML = '';
     membersTbody.appendChild(createMemberRow());
   }
-
 
   function populateMembersTable(members) {
     if (!membersTbody) return;
@@ -1771,6 +1766,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (resetConfirm) {
+    resetConfirm.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        resetConfirm.hidden = true;
+        resetButton?.focus();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const focusable = [resetCancelBtn, resetConfirmBtn].filter(Boolean);
+      if (focusable.length < 2) return;
+      if (e.shiftKey) {
+        if (document.activeElement === focusable[0]) {
+          e.preventDefault();
+          focusable[focusable.length - 1].focus();
+        }
+      } else {
+        if (document.activeElement === focusable[focusable.length - 1]) {
+          e.preventDefault();
+          focusable[0].focus();
+        }
+      }
+    });
+  }
+
   if (resetCancelBtn) {
     resetCancelBtn.addEventListener('click', () => {
       if (resetConfirm) resetConfirm.hidden = true;
@@ -1782,6 +1801,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resetConfirmBtn.addEventListener('click', () => {
       if (resetConfirm) resetConfirm.hidden = true;
       form.reset();
+      resetButton?.focus();
     });
   }
 
@@ -1797,9 +1817,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (sortRoleDefinitionsBtn) {
-    sortRoleDefinitionsBtn.addEventListener('click', () => {
-      sortRoleDefinitions();
-    });
+    sortRoleDefinitionsBtn.addEventListener('click', sortRoleDefinitions);
   }
 
   if (jumpTopButton) {
