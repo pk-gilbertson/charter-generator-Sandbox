@@ -933,7 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function scheduleSave() {
     clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(saveToStorage, 800);
+    saveTimer = setTimeout(saveToStorage, 800);
   }
 
   function applyFormState(state) {
@@ -1736,7 +1736,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   form.addEventListener('reset', () => {
-    window.setTimeout(() => {
+    setTimeout(() => {
       clearStorage();
       REQUIRED_FIELD_IDS.forEach((id) => setAriaInvalid(id, false));
       setStatus('');
@@ -1832,7 +1832,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.addEventListener('scroll', updateJumpTopVisibility, { passive: true });
-  window.addEventListener('resize', updateJumpTopVisibility);
+  window.addEventListener('resize', updateJumpTopVisibility, { passive: true });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
