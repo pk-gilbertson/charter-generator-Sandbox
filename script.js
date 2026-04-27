@@ -1627,11 +1627,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildVersionHistorySection() {
+    const historyText = getOptionalValue('version-history') || DEFAULTS['version-history'];
     const versionHistoryTable = createDataTable(
       ['Version', 'Date', 'Author', 'Summary of Changes'],
-      getOptionalValue('version-history') || DEFAULTS['version-history'],
+      historyText,
       4,
-      DEFAULTS['version-history'],
+      historyText,
       'custodian'
     );
     return createSection('12. Version History', 'custodian', () => [versionHistoryTable]);

@@ -37,7 +37,7 @@
 </aside>
 </header>
 <!-- Workspace pairs persistent jump navigation with the editable charter form. -->
-<div class="workspace" id="main-content">
+<div class="workspace">
 <nav aria-label="Section navigation" class="jump-nav">
 <div class="jump-nav__card jump-nav__card--collapsible" id="jump-nav-card">
 <button aria-controls="jump-nav-body" aria-expanded="true" class="jump-nav__toggle" id="jump-nav-toggle" type="button">
@@ -63,7 +63,7 @@ Jump to section
 <div class="jump-nav__card jump-nav__card--support">
 <h2>Draft status</h2>
 <p id="completion-text" aria-live="polite">Start with the charter basics and purpose sections.</p>
-<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="completion-text" id="completion-progress">
+<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Form completion" id="completion-progress">
 <span id="completion-bar"></span>
 </div>
 <p class="filename-label">Download name</p>
@@ -86,7 +86,7 @@ Jump to section
 </div>
 </div>
 </nav>
-<main>
+<main id="main-content">
 <form id="charter-form" novalidate=""><div class="inline-help-banner" role="note">Hover or focus the information icons next to field labels for plain-language definitions and drafting guidance.</div>
 <!-- Core charter sections capture the minimum fields required for a usable draft. -->
 <section aria-labelledby="section-basics-title" class="form-card form-card--owner" id="section-basics">
