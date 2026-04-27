@@ -37,7 +37,7 @@
 </aside>
 </header>
 <!-- Workspace pairs persistent jump navigation with the editable charter form. -->
-<div class="workspace" id="main-content">
+<div class="workspace">
 <nav aria-label="Section navigation" class="jump-nav">
 <div class="jump-nav__card jump-nav__card--collapsible" id="jump-nav-card">
 <button aria-controls="jump-nav-body" aria-expanded="true" class="jump-nav__toggle" id="jump-nav-toggle" type="button">
@@ -62,8 +62,8 @@ Jump to section
 </div>
 <div class="jump-nav__card jump-nav__card--support">
 <h2>Draft status</h2>
-<p id="completion-text">Start with the charter basics and purpose sections.</p>
-<div aria-hidden="true" class="progress">
+<p id="completion-text" aria-live="polite">Start with the charter basics and purpose sections.</p>
+<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Form completion" id="completion-progress">
 <span id="completion-bar"></span>
 </div>
 <p class="filename-label">Download name</p>
@@ -76,10 +76,17 @@ Jump to section
 <p class="utility-label">Form actions</p>
 <button aria-describedby="reset-form-helper" class="button button--utility button--sidebar" id="reset-form-button" type="button">Reset form</button>
 <p class="jump-nav__helper" id="reset-form-helper">Clears entered content and returns the form to its default state.</p>
+<div class="reset-confirm" id="reset-confirm" role="alertdialog" aria-labelledby="reset-confirm-message" aria-modal="true" hidden>
+<p class="reset-confirm__message" id="reset-confirm-message">This will clear all entered content. Continue?</p>
+<div class="reset-confirm__actions">
+<button class="button button--utility reset-confirm__cancel" id="reset-cancel" type="button">Cancel</button>
+<button class="button button--danger reset-confirm__proceed" id="reset-confirm-btn" type="button">Yes, reset</button>
+</div>
+</div>
 </div>
 </div>
 </nav>
-<main>
+<main id="main-content">
 <form id="charter-form" novalidate=""><div class="inline-help-banner" role="note">Hover or focus the information icons next to field labels for plain-language definitions and drafting guidance.</div>
 <!-- Core charter sections capture the minimum fields required for a usable draft. -->
 <section aria-labelledby="section-basics-title" class="form-card form-card--owner" id="section-basics">
@@ -237,7 +244,7 @@ Standardize where practical" rows="6"></textarea>
   <!-- Members structured table -->
   <div class="field-group field-group--full">
     <div class="field-label-row">
-      <label>Committee Members</label>
+      <span class="field-group-label">Committee Members</span>
       <span class="field-help">
         <button aria-label="Definition for Committee Members" class="field-help__button" type="button">i</button>
         <span class="field-help__tooltip" role="tooltip">List the people or roles that participate in the committee. Include title, committee role, and voting status.</span>
@@ -267,9 +274,8 @@ Standardize where practical" rows="6"></textarea>
 <div class="field-group"><div class="field-label-row"><span class="field-group-label" id="required-functions-label">Required Functions / Perspectives</span><span class="field-help"><button aria-label="Definition for Required Functions / Perspectives" class="field-help__button" type="button">i</button><span class="field-help__tooltip" role="tooltip">Identify the business, technical, legal, privacy, security, and operational perspectives that should be represented.</span></span></div>
 
 <p class="selection-note" id="required-functions-note">Select all perspectives that should be represented in the committee.</p>
-<fieldset aria-labelledby="required-functions-label" class="checkbox-group">
-<legend class="sr-only">Required Functions / Perspectives</legend>
-<div class="checkbox-list checkbox-list--compact" id="required-functions-options" role="group"></div>
+<fieldset aria-labelledby="required-functions-label" aria-describedby="required-functions-note" class="checkbox-group">
+<div class="checkbox-list checkbox-list--compact" id="required-functions-options"></div>
 </fieldset>
 <div class="conditional-field" hidden="" id="required-functions-other-wrap">
 <label class="sr-only" for="required-functions-other">Describe other required function or perspective</label>
@@ -427,6 +433,8 @@ Interoperability Working Group" rows="5"></textarea>
 <span class="jump-top__label">Top</span>
 </button>
 <!-- Load third-party libraries first, then initialize page behavior. -->
+<!-- TODO: Add integrity="sha384-<hash>" crossorigin="anonymous" to both CDN scripts below.
+     Generate hashes with: curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A -->
 <script defer="" src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <script defer="" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script defer="" src="script.js"></script>

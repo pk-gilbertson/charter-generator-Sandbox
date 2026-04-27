@@ -8,7 +8,6 @@
   --custodian-tint: #E4DBDB;
   --ink: #1F2933;
   --linen: #F7F3EC;
-  --sand: #E8DDD0;
   --divider: #C8B9A6;
   --focus-link: #005EA2;
   --focus-tint: #D8E8F5;
@@ -28,6 +27,11 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --font-sans: Aptos, Arial, Calibri, "Segoe UI", sans-serif;
+  --error-core: #b42318;
+  --error-hover: #9a1e15;
+  --error-dark: #7a1f18;
+  --error-tint: rgba(253, 236, 234, 0.7);
+  --error-core-rgb: 180, 35, 24;
 }
 
 * {
@@ -44,7 +48,7 @@ body {
   background: linear-gradient(180deg, #fbf8f2 0%, var(--linen) 100%);
   color: var(--ink);
   font-family: var(--font-sans);
-  line-height: 1.25;
+  line-height: 1.45;
 }
 
 img,
@@ -606,8 +610,8 @@ a:focus-visible {
 
 input[aria-invalid="true"],
 textarea[aria-invalid="true"] {
-  border-color: #b42318;
-  box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.08);
+  border-color: var(--error-core);
+  box-shadow: 0 0 0 2px rgba(var(--error-core-rgb), 0.08);
 }
 
 .selection-note {
@@ -781,7 +785,7 @@ textarea[aria-invalid="true"] {
 
 .button--sidebar {
   width: 100%;
-  justify-content: center;
+  text-align: center;
 }
 
 .button--ghost {
@@ -811,6 +815,17 @@ textarea[aria-invalid="true"] {
   background: linear-gradient(180deg, #f1e8db 0%, #e7d8c5 100%);
 }
 
+.button--danger {
+  background: var(--error-core);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(var(--error-core-rgb), 0.2);
+}
+
+.button--danger:hover {
+  background: var(--error-hover);
+  box-shadow: 0 8px 20px rgba(var(--error-core-rgb), 0.28);
+}
+
 .form-status {
   min-height: 1.5rem;
   margin: 1rem 0 0;
@@ -822,7 +837,7 @@ textarea[aria-invalid="true"] {
 }
 
 .form-status.error {
-  color: #b42318;
+  color: var(--error-core);
 }
 
 /* Members table */
@@ -919,14 +934,45 @@ textarea[aria-invalid="true"] {
 }
 
 .members-delete-btn:hover {
-  background: #fdecea;
-  color: #b42318;
-  border-color: rgba(180, 35, 24, 0.3);
-  transform: none;
+  background: var(--error-tint);
+  color: var(--error-core);
+  border-color: rgba(var(--error-core-rgb), 0.3);
 }
 
 .members-actions {
   margin-top: 0.65rem;
+}
+
+.reset-confirm {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(var(--error-core-rgb), 0.22);
+  border-radius: var(--radius-sm);
+  background: var(--error-tint);
+}
+
+.reset-confirm[hidden] {
+  display: none;
+}
+
+.reset-confirm__message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--error-dark);
+  line-height: 1.4;
+}
+
+.reset-confirm__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.reset-confirm__actions .button {
+  flex: 1;
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 0.55rem 0.6rem;
 }
 
 .button--add-row {
@@ -1003,7 +1049,7 @@ textarea[aria-invalid="true"] {
 }
 
 .jump-top.is-visible:not(:hover):not(:focus-visible) {
-  animation: jump-top-float 2.8s ease-in-out infinite;
+  animation: jump-top-float 2.8s ease-in-out 1;
 }
 
 @keyframes jump-top-float {
@@ -1122,5 +1168,65 @@ textarea[aria-invalid="true"] {
   .checkbox-list--compact,
   #required-functions-options {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .jump-nav,
+  .jump-top,
+  .hero__panel,
+  .inline-help-banner,
+  .jump-nav__actions,
+  .jump-nav__utilities,
+  .action-row,
+  .reset-confirm,
+  .members-actions,
+  .members-cell--delete,
+  .members-table thead th:last-child {
+    display: none !important;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .workspace {
+    display: block;
+  }
+
+  .page-shell {
+    width: 100%;
+    padding: 0;
+  }
+
+  .form-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+    border-top-width: 3px;
+    margin-bottom: 0.75rem;
+  }
+
+  .members-table-wrap {
+    overflow: visible;
+  }
+
+  /* Reveal body of any advanced panel that was collapsed before printing. */
+  details:not([open]) .advanced-panel__body {
+    display: block;
+  }
+
+  /* Hide the open/close toggle indicator — it is meaningless on paper. */
+  .advanced-panel summary::after {
+    display: none;
+  }
+
+  input,
+  select,
+  textarea {
+    border-color: #bbb;
+    background: #fff;
   }
 }

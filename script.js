@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
   // Cache frequently accessed DOM nodes and shared UI state.
   const form = document.getElementById('charter-form');
   const statusEl = document.getElementById('form-status');
@@ -15,10 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetButton = document.getElementById('reset-form-button');
   const jumpNavCard = document.getElementById('jump-nav-card');
   const jumpNavToggle = document.getElementById('jump-nav-toggle');
+  const resetConfirm = document.getElementById('reset-confirm');
+  const resetCancelBtn = document.getElementById('reset-cancel');
+  const resetConfirmBtn = document.getElementById('reset-confirm-btn');
+  const completionProgress = document.getElementById('completion-progress');
   const JUMP_NAV_COLLAPSE_THRESHOLD = 120;
 
   let docx = null;
   let initialFormSnapshot = '';
+  let saveTimer = null;
 
   if (!form) {
     console.error('Charter form not found.');
@@ -349,7 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
     'agency-scope': 'Agency / Department',
     'executive-sponsor': 'Secretary Example Sponsor',
     'chair-lead': 'Committee Chair',
-    'effective-date': new Date().toISOString().slice(0, 10),
+    // Getters so the date is always "today" even in long-lived sessions.
+    get 'effective-date'() { return new Date().toISOString().slice(0, 10); },
     'term-review': 'Effective until revised or rescinded; reviewed annually.',
     purpose:
       'The purpose of this committee is to establish direction, accountability, and oversight for the management and use of data as a strategic asset in support of agency operations, policy, reporting, and responsible innovation.',
@@ -436,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'data-sharing':
       'The committee may review or support processes related to internal sharing, external sharing, access requests, and associated agreements or approvals, consistent with agency and enterprise requirements.',
     subcommittees: 'Data Quality Working Group\nMetadata and Standards Working Group',
-    'version-history': `1.0, ${new Date().toISOString().slice(0, 10)}, System, Initial charter generated`
+    get 'version-history'() { return `1.0, ${new Date().toISOString().slice(0, 10)}, System, Initial charter generated`; }
   };
 
   // Show/hide the "Back to top" control based on scroll depth.
@@ -456,16 +464,29 @@ document.addEventListener('DOMContentLoaded', () => {
     jumpTopButton.classList.toggle('is-visible', shouldShow);
 
     // Auto-collapse Jump to Section when scrolling down, re-open near top
-    if (window.scrollY > JUMP_NAV_COLLAPSE_THRESHOLD) {
-      setJumpNavCollapsed(true);
-    } else {
-      setJumpNavCollapsed(false);
-    }
+    setJumpNavCollapsed(window.scrollY > JUMP_NAV_COLLAPSE_THRESHOLD);
   }
 
   function scrollToTop() {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
+
+  function wireTooltipAccessibility() {
+    document.querySelectorAll('.field-help').forEach((container, index) => {
+      const button = container.querySelector('.field-help__button');
+      const tooltip = container.querySelector('.field-help__tooltip');
+      if (!button || !tooltip) return;
+
+      const tooltipId = `field-tooltip-${index}`;
+      tooltip.id = tooltipId;
+      button.setAttribute('aria-describedby', tooltipId);
+
+      // Remove trailing inline hints like "One per line …" from the aria-label
+      const label = button.getAttribute('aria-label') || '';
+      const cleaned = label.replace(/\s+One per line(\s+in the format[^"]*)?$/i, '').trim();
+      if (cleaned !== label) button.setAttribute('aria-label', cleaned);
+    });
   }
 
   function resolveDocx() {
@@ -490,6 +511,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return requiredKeys.every((key) => key in library) ? library : null;
   }
+
+  // Deferred scripts execute before DOMContentLoaded, so the library is available here.
+  docx = resolveDocx();
 
   // Generic value helpers keep null/empty handling consistent across fields.
   function getField(id) {
@@ -571,8 +595,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     roleDefinitionsField.value = sortedLines.join('\n');
     updateHelpers();
+    scheduleSave();
   }
 
+  // Splits a comma-delimited line into exactly `expectedParts` columns.
+  // Any surplus commas are folded back into the last column, so a Summary
+  // field like "Initial draft, scope added" stays intact in column 4 of 4.
   function splitWithLimit(line, expectedParts) {
     const rawParts = String(line || '')
       .split(',')
@@ -887,6 +915,60 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const STORAGE_KEY = 'charter-generator-v1';
+
+  function saveToStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY, serializeFormState());
+    } catch {
+      // localStorage unavailable (private browsing, quota exceeded, etc.)
+    }
+  }
+
+  function clearStorage() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  }
+
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveToStorage, 800);
+  }
+
+  function applyFormState(state) {
+    if (!state || !Array.isArray(state.fields)) return;
+
+    // Group repeated checkbox keys (key ending in "[]") into arrays
+    const fieldMap = new Map();
+    state.fields.forEach(([key, value]) => {
+      if (key.endsWith('[]')) {
+        const base = key.slice(0, -2);
+        if (!fieldMap.has(base)) fieldMap.set(base, []);
+        fieldMap.get(base).push(value);
+      } else {
+        fieldMap.set(key, value);
+      }
+    });
+
+    fieldMap.forEach((value, key) => setFieldValue(key, value));
+
+    if (Array.isArray(state.members) && state.members.some(isMeaningfulMemberRow)) {
+      populateMembersTable(state.members.filter(isMeaningfulMemberRow));
+    }
+  }
+
+  function restoreFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      applyFormState(JSON.parse(raw));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function serializeFormState() {
     const formData = new FormData(form);
     const fields = Array.from(formData.entries())
@@ -973,6 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initMembersTable();
       }
       updateHelpers();
+      scheduleSave();
     });
 
     tdDelete.appendChild(deleteButton);
@@ -985,10 +1068,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!membersTbody) return;
     membersTbody.innerHTML = '';
     membersTbody.appendChild(createMemberRow());
-  }
-
-  function clearMembersTable() {
-    initMembersTable();
   }
 
   function populateMembersTable(members) {
@@ -1047,6 +1126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const percent = Math.round((completed / total) * 100);
 
     completionBar.style.width = `${percent}%`;
+    if (completionProgress) completionProgress.setAttribute('aria-valuenow', String(percent));
 
     if (percent < 35) {
       completionText.textContent = 'Start with the charter basics and purpose sections.';
@@ -1079,6 +1159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAllStructuredFieldStates();
     updateHelpers();
     setStatus('Starter content loaded. Review and customize before export.', 'success');
+    scheduleSave();
   }
 
   // DOCX helper factories keep document construction readable and reusable.
@@ -1420,6 +1501,143 @@ document.addEventListener('DOMContentLoaded', () => {
     return [createSectionDivider(sectionKey), heading(title, docx.HeadingLevel.HEADING_1), ...content, blankParagraph()];
   }
 
+  function buildPurposeSection() {
+    return createSection('1. Purpose', 'owner', () =>
+      multiParagraphs(getTextValue('purpose', DEFAULTS.purpose))
+    );
+  }
+
+  function buildVisionMissionSection() {
+    return createSection('2. Vision & Mission', 'owner', () => [
+      heading('Vision', docx.HeadingLevel.HEADING_2),
+      ...multiParagraphs(getTextValue('vision', DEFAULTS.vision)),
+      heading('Mission', docx.HeadingLevel.HEADING_2),
+      ...multiParagraphs(getTextValue('mission', DEFAULTS.mission))
+    ]);
+  }
+
+  function buildObjectivesSection() {
+    return createSection('3. Objectives', 'owner', () =>
+      bulletList(getTextValue('objectives', DEFAULTS.objectives))
+    );
+  }
+
+  function buildSuccessMetricsSection() {
+    return createSection('4. Success Metrics', 'owner', () =>
+      bulletList(getTextValue('success-metrics', DEFAULTS['success-metrics']))
+    );
+  }
+
+  function buildScopeSection() {
+    return createSection('5. Scope & Authority', 'owner', () => [
+      heading('In Scope', docx.HeadingLevel.HEADING_2),
+      ...bulletList(getTextValue('in-scope', DEFAULTS['in-scope'])),
+      heading('Out of Scope', docx.HeadingLevel.HEADING_2),
+      ...bulletList(getTextValue('out-of-scope', DEFAULTS['out-of-scope'])),
+      heading('Decision Authority', docx.HeadingLevel.HEADING_2),
+      bodyParagraph(getFieldValue('decision-authority', DEFAULTS['decision-authority'])),
+      heading('Escalation Path', docx.HeadingLevel.HEADING_2),
+      ...multiParagraphs(getTextValue('escalation-path', DEFAULTS['escalation-path']))
+    ]);
+  }
+
+  function buildGuidingPrinciplesSection() {
+    return createSection('6. Guiding Principles', 'steward', () =>
+      bulletList(getTextValue('guiding-principles', DEFAULTS['guiding-principles']))
+    );
+  }
+
+  function buildMembershipSection() {
+    const memberRows = getMemberRows().filter(isMeaningfulMemberRow);
+    const votingMembers = memberRows.filter((row) => row.voting === 'Voting');
+    const nonVotingMembers = memberRows.filter((row) => row.voting === 'Non-Voting');
+    const requiredFunctions = getFieldValue('required-functions', DEFAULTS['required-functions']);
+
+    return createSection('7. Membership & Representation', 'steward', () => [
+      heading('Committee Members - Voting', docx.HeadingLevel.HEADING_2),
+      createMembersDocTable(votingMembers, 'steward'),
+      heading('Committee Members - Non-Voting', docx.HeadingLevel.HEADING_2),
+      createMembersDocTable(nonVotingMembers, 'steward'),
+      heading('Required Functions / Perspectives', docx.HeadingLevel.HEADING_2),
+      ...bulletList(requiredFunctions),
+      heading('Role Definitions', docx.HeadingLevel.HEADING_2),
+      ...bulletList(getTextValue('role-definitions', DEFAULTS['role-definitions']))
+    ]);
+  }
+
+  function buildResponsibilitiesSection() {
+    return createSection('8. Responsibilities & Deliverables', 'steward', () => [
+      heading('Committee Responsibilities', docx.HeadingLevel.HEADING_2),
+      ...bulletList(getTextValue('responsibilities', DEFAULTS.responsibilities)),
+      heading('Annual or Initial Priorities', docx.HeadingLevel.HEADING_2),
+      ...bulletList(getTextValue('annual-priorities', DEFAULTS['annual-priorities'])),
+      heading('Key Deliverables', docx.HeadingLevel.HEADING_2),
+      ...bulletList(getTextValue('key-deliverables', DEFAULTS['key-deliverables']))
+    ]);
+  }
+
+  function buildOperatingSection() {
+    return createSection('9. Operating Model', 'custodian', () => {
+      const operatingModelTable = createKeyValueTable(
+        [
+          ['Meeting Frequency', getFieldValue('meeting-frequency', DEFAULTS['meeting-frequency'])],
+          ['Quorum', getFieldValue('quorum', DEFAULTS.quorum)],
+          ['Decision-Making Process', getFieldValue('decision-making', DEFAULTS['decision-making'])]
+        ],
+        'custodian'
+      );
+
+      return [
+        operatingModelTable,
+        heading('Meeting Administration', docx.HeadingLevel.HEADING_2),
+        ...multiParagraphs(getTextValue('meeting-administration', DEFAULTS['meeting-administration']))
+      ];
+    });
+  }
+
+  function buildPolicySection() {
+    return createSection('10. Policy, Privacy, Security & Sharing', 'custodian', () => {
+      const content = [];
+      const policyAlignment = getOptionalValue('policy-alignment');
+      const privacySecurity = getOptionalValue('privacy-security-considerations');
+      const dataSharing = getOptionalValue('data-sharing');
+
+      if (policyAlignment) {
+        content.push(heading('Policy / Legal / Regulatory Alignment', docx.HeadingLevel.HEADING_2));
+        content.push(...multiParagraphs(policyAlignment));
+      }
+      if (privacySecurity) {
+        content.push(heading('Privacy, Security & Data Release Considerations', docx.HeadingLevel.HEADING_2));
+        content.push(...multiParagraphs(privacySecurity));
+      }
+      if (dataSharing) {
+        content.push(heading('Data Sharing & Access Considerations', docx.HeadingLevel.HEADING_2));
+        content.push(...multiParagraphs(dataSharing));
+      }
+
+      return content;
+    });
+  }
+
+  function buildSubcommitteesSection() {
+    return createSection('11. Working Groups & Subcommittees', 'custodian', () => {
+      const subcommittees = getOptionalValue('subcommittees');
+      return subcommittees ? bulletList(subcommittees) : [];
+    });
+  }
+
+  function buildVersionHistorySection() {
+    const historyText = getOptionalValue('version-history') || DEFAULTS['version-history'];
+    const versionHistoryTable = createDataTable(
+      ['Version', 'Date', 'Author', 'Summary of Changes'],
+      historyText,
+      4,
+      historyText,
+      'custodian'
+    );
+    return createSection('12. Version History', 'custodian', () => [versionHistoryTable]);
+  }
+
   function buildDocument() {
     const charterName = getTextValue('charter-name', DEFAULTS['charter-name']);
     const agencyName = getTextValue('agency-name', DEFAULTS['agency-name']);
@@ -1429,10 +1647,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const chairLead = getTextValue('chair-lead', DEFAULTS['chair-lead']);
     const effectiveDate = formatDate(getTextValue('effective-date', DEFAULTS['effective-date']));
     const termReview = getTextValue('term-review', DEFAULTS['term-review']);
-    const decisionAuthority = getFieldValue('decision-authority', DEFAULTS['decision-authority']);
-    const requiredFunctions = getFieldValue('required-functions', DEFAULTS['required-functions']);
-    const meetingFrequency = getFieldValue('meeting-frequency', DEFAULTS['meeting-frequency']);
-    const decisionMaking = getFieldValue('decision-making', DEFAULTS['decision-making']);
 
     const metadataTable = createMetadataTable(
       [
@@ -1447,137 +1661,31 @@ document.addEventListener('DOMContentLoaded', () => {
       'owner'
     );
 
-    const memberRows = getMemberRows().filter((row) => isMeaningfulMemberRow(row));
-    const votingMembers = memberRows.filter((row) => row.voting === 'Voting');
-    const nonVotingMembers = memberRows.filter((row) => row.voting === 'Non-Voting');
-
-    const versionHistoryTable = createDataTable(
-      ['Version', 'Date', 'Author', 'Summary of Changes'],
-      getOptionalValue('version-history') || DEFAULTS['version-history'],
-      4,
-      DEFAULTS['version-history'],
-      'custodian'
-    );
-
     const children = [
       new docx.Paragraph({
         alignment: docx.AlignmentType.CENTER,
         spacing: { after: DOCX_THEME.spacing.titleAfter },
-        children: [
-          createTextRun(charterName, {
-            bold: true,
-            size: DOCX_THEME.sizes.title,
-            color: DOCX_THEME.colors.ink
-          })
-        ]
+        children: [createTextRun(charterName, { bold: true, size: DOCX_THEME.sizes.title, color: DOCX_THEME.colors.ink })]
       }),
       new docx.Paragraph({
         alignment: docx.AlignmentType.CENTER,
         spacing: { after: DOCX_THEME.spacing.subtitleAfter },
-        children: [
-          createTextRun(agencyName, {
-            size: DOCX_THEME.sizes.subtitle,
-            color: DOCX_THEME.colors.subtitle
-          })
-        ]
+        children: [createTextRun(agencyName, { size: DOCX_THEME.sizes.subtitle, color: DOCX_THEME.colors.subtitle })]
       }),
       metadataTable,
       blankParagraph(60),
-
-      ...createSection('1. Purpose', 'owner', () => multiParagraphs(getTextValue('purpose', DEFAULTS.purpose))),
-      ...createSection('2. Vision & Mission', 'owner', () => [
-        heading('Vision', docx.HeadingLevel.HEADING_2),
-        ...multiParagraphs(getTextValue('vision', DEFAULTS.vision)),
-        heading('Mission', docx.HeadingLevel.HEADING_2),
-        ...multiParagraphs(getTextValue('mission', DEFAULTS.mission))
-      ]),
-      ...createSection('3. Objectives', 'owner', () => bulletList(getTextValue('objectives', DEFAULTS.objectives))),
-      ...createSection('4. Success Metrics', 'owner', () =>
-        bulletList(getTextValue('success-metrics', DEFAULTS['success-metrics']))
-      ),
-
-      ...createSection('5. Scope & Authority', 'owner', () => [
-        heading('In Scope', docx.HeadingLevel.HEADING_2),
-        ...bulletList(getTextValue('in-scope', DEFAULTS['in-scope'])),
-        heading('Out of Scope', docx.HeadingLevel.HEADING_2),
-        ...bulletList(getTextValue('out-of-scope', DEFAULTS['out-of-scope'])),
-        heading('Decision Authority', docx.HeadingLevel.HEADING_2),
-        bodyParagraph(decisionAuthority),
-        heading('Escalation Path', docx.HeadingLevel.HEADING_2),
-        ...multiParagraphs(getTextValue('escalation-path', DEFAULTS['escalation-path']))
-      ]),
-
-      ...createSection('6. Guiding Principles', 'steward', () =>
-        bulletList(getTextValue('guiding-principles', DEFAULTS['guiding-principles']))
-      ),
-
-      ...createSection('7. Membership & Representation', 'steward', () => [
-        heading('Committee Members - Voting', docx.HeadingLevel.HEADING_2),
-        createMembersDocTable(votingMembers, 'steward'),
-        heading('Committee Members - Non-Voting', docx.HeadingLevel.HEADING_2),
-        createMembersDocTable(nonVotingMembers, 'steward'),
-        heading('Required Functions / Perspectives', docx.HeadingLevel.HEADING_2),
-        ...bulletList(requiredFunctions),
-        heading('Role Definitions', docx.HeadingLevel.HEADING_2),
-        ...bulletList(getTextValue('role-definitions', DEFAULTS['role-definitions']))
-      ]),
-
-      ...createSection('8. Responsibilities & Deliverables', 'steward', () => [
-        heading('Committee Responsibilities', docx.HeadingLevel.HEADING_2),
-        ...bulletList(getTextValue('responsibilities', DEFAULTS.responsibilities)),
-        heading('Annual or Initial Priorities', docx.HeadingLevel.HEADING_2),
-        ...bulletList(getTextValue('annual-priorities', DEFAULTS['annual-priorities'])),
-        heading('Key Deliverables', docx.HeadingLevel.HEADING_2),
-        ...bulletList(getTextValue('key-deliverables', DEFAULTS['key-deliverables']))
-      ]),
-
-      ...createSection('9. Operating Model', 'custodian', () => {
-        const operatingModelTable = createKeyValueTable(
-          [
-            ['Meeting Frequency', meetingFrequency],
-            ['Quorum', getFieldValue('quorum', DEFAULTS.quorum)],
-            ['Decision-Making Process', decisionMaking]
-          ],
-          'custodian'
-        );
-
-        return [
-          operatingModelTable,
-          heading('Meeting Administration', docx.HeadingLevel.HEADING_2),
-          ...multiParagraphs(getTextValue('meeting-administration', DEFAULTS['meeting-administration']))
-        ];
-      }),
-
-      ...createSection('10. Policy, Privacy, Security & Sharing', 'custodian', () => {
-        const content = [];
-        const policyAlignment = getOptionalValue('policy-alignment');
-        const privacySecurity = getOptionalValue('privacy-security-considerations');
-        const dataSharing = getOptionalValue('data-sharing');
-
-        if (policyAlignment) {
-          content.push(heading('Policy / Legal / Regulatory Alignment', docx.HeadingLevel.HEADING_2));
-          content.push(...multiParagraphs(policyAlignment));
-        }
-
-        if (privacySecurity) {
-          content.push(heading('Privacy, Security & Data Release Considerations', docx.HeadingLevel.HEADING_2));
-          content.push(...multiParagraphs(privacySecurity));
-        }
-
-        if (dataSharing) {
-          content.push(heading('Data Sharing & Access Considerations', docx.HeadingLevel.HEADING_2));
-          content.push(...multiParagraphs(dataSharing));
-        }
-
-        return content;
-      }),
-
-      ...createSection('11. Working Groups & Subcommittees', 'custodian', () => {
-        const subcommittees = getOptionalValue('subcommittees');
-        return subcommittees ? bulletList(subcommittees) : [];
-      }),
-
-      ...createSection('12. Version History', 'custodian', () => [versionHistoryTable])
+      ...buildPurposeSection(),
+      ...buildVisionMissionSection(),
+      ...buildObjectivesSection(),
+      ...buildSuccessMetricsSection(),
+      ...buildScopeSection(),
+      ...buildGuidingPrinciplesSection(),
+      ...buildMembershipSection(),
+      ...buildResponsibilitiesSection(),
+      ...buildOperatingSection(),
+      ...buildPolicySection(),
+      ...buildSubcommitteesSection(),
+      ...buildVersionHistorySection()
     ];
 
     return new docx.Document({
@@ -1605,6 +1713,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateHelpers();
+    scheduleSave();
   });
 
   form.addEventListener('change', (event) => {
@@ -1624,13 +1733,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateHelpers();
+    scheduleSave();
   });
 
   form.addEventListener('reset', () => {
-    window.setTimeout(() => {
+    setTimeout(() => {
+      clearStorage();
       REQUIRED_FIELD_IDS.forEach((id) => setAriaInvalid(id, false));
       setStatus('');
-      clearMembersTable();
+      initMembersTable();
       setTextValue('role-definitions', DEFAULT_ROLE_DEFINITION_LINES.join('\n'));
       updateAllStructuredFieldStates();
       updateHelpers();
@@ -1643,11 +1754,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (resetButton) {
     resetButton.addEventListener('click', () => {
-      if (hasFormChanges()) {
-        const confirmed = window.confirm('Clear the form and remove any entered content?');
-        if (!confirmed) return;
+      if (!hasFormChanges()) {
+        form.reset();
+        return;
       }
+      if (resetConfirm) {
+        resetConfirm.hidden = false;
+        resetCancelBtn?.focus();
+      } else {
+        form.reset();
+      }
+    });
+  }
+
+  if (resetConfirm) {
+    resetConfirm.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        resetConfirm.hidden = true;
+        resetButton?.focus();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const focusable = [resetCancelBtn, resetConfirmBtn].filter(Boolean);
+      if (focusable.length < 2) return;
+      if (e.shiftKey) {
+        if (document.activeElement === focusable[0]) {
+          e.preventDefault();
+          focusable[focusable.length - 1].focus();
+        }
+      } else {
+        if (document.activeElement === focusable[focusable.length - 1]) {
+          e.preventDefault();
+          focusable[0].focus();
+        }
+      }
+    });
+  }
+
+  if (resetCancelBtn) {
+    resetCancelBtn.addEventListener('click', () => {
+      if (resetConfirm) resetConfirm.hidden = true;
+      resetButton?.focus();
+    });
+  }
+
+  if (resetConfirmBtn) {
+    resetConfirmBtn.addEventListener('click', () => {
+      if (resetConfirm) resetConfirm.hidden = true;
       form.reset();
+      resetButton?.focus();
     });
   }
 
@@ -1658,13 +1813,12 @@ document.addEventListener('DOMContentLoaded', () => {
       membersTbody.appendChild(row);
       row.querySelector('[data-member-key="name"]')?.focus();
       updateHelpers();
+      scheduleSave();
     });
   }
 
   if (sortRoleDefinitionsBtn) {
-    sortRoleDefinitionsBtn.addEventListener('click', () => {
-      sortRoleDefinitions();
-    });
+    sortRoleDefinitionsBtn.addEventListener('click', sortRoleDefinitions);
   }
 
   if (jumpTopButton) {
@@ -1679,7 +1833,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.addEventListener('scroll', updateJumpTopVisibility, { passive: true });
-  window.addEventListener('resize', updateJumpTopVisibility);
+  window.addEventListener('resize', updateJumpTopVisibility, { passive: true });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -1691,7 +1845,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    docx = resolveDocx();
     if (!docx || typeof window.saveAs !== 'function') {
       setStatus('Document libraries did not load. Refresh the page and try again.', 'error');
       return;
@@ -1726,7 +1879,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initMembersTable();
   updateAllStructuredFieldStates();
+
+  // Capture the empty-form baseline before any restoration, so hasFormChanges()
+  // correctly treats restored content as "changed" relative to a blank form.
   initialFormSnapshot = serializeFormState();
+
+  const restored = restoreFromStorage();
+  if (restored) {
+    syncRoleDefinitionsFromRequiredFunctions();
+    updateAllStructuredFieldStates();
+    setStatus('Previous session content has been restored.', 'success');
+  }
+
   updateHelpers();
   updateJumpTopVisibility();
+  wireTooltipAccessibility();
 });
