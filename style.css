@@ -48,7 +48,7 @@ body {
   background: linear-gradient(180deg, #fbf8f2 0%, var(--linen) 100%);
   color: var(--ink);
   font-family: var(--font-sans);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 img,
