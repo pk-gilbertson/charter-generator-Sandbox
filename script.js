@@ -1789,6 +1789,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+    resetConfirm.addEventListener('click', (e) => {
+      if (e.target === resetConfirm) {
+        resetConfirm.hidden = true;
+        resetButton?.focus();
+      }
+    });
   }
 
   if (resetCancelBtn) {

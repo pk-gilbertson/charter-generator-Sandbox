@@ -76,13 +76,6 @@ Jump to section
 <p class="utility-label">Form actions</p>
 <button aria-describedby="reset-form-helper" class="button button--utility button--sidebar" id="reset-form-button" type="button">Reset form</button>
 <p class="jump-nav__helper" id="reset-form-helper">Clears entered content and returns the form to its default state.</p>
-<div class="reset-confirm" id="reset-confirm" role="alertdialog" aria-labelledby="reset-confirm-message" aria-modal="true" hidden>
-<p class="reset-confirm__message" id="reset-confirm-message">This will clear all entered content. Continue?</p>
-<div class="reset-confirm__actions">
-<button class="button button--utility reset-confirm__cancel" id="reset-cancel" type="button">Cancel</button>
-<button class="button button--danger reset-confirm__proceed" id="reset-confirm-btn" type="button">Yes, reset</button>
-</div>
-</div>
 </div>
 </div>
 </nav>
@@ -438,5 +431,14 @@ Interoperability Working Group" rows="5"></textarea>
 <script defer="" src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <script defer="" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script defer="" src="script.js"></script>
+<div class="reset-confirm" id="reset-confirm" role="alertdialog" aria-labelledby="reset-confirm-message" aria-modal="true" hidden>
+<div class="reset-confirm__card">
+<p class="reset-confirm__message" id="reset-confirm-message">This will clear all entered content. Continue?</p>
+<div class="reset-confirm__actions">
+<button class="button button--utility reset-confirm__cancel" id="reset-cancel" type="button">Cancel</button>
+<button class="button button--danger reset-confirm__proceed" id="reset-confirm-btn" type="button">Yes, reset</button>
+</div>
+</div>
+</div>
 </body>
 </html>
